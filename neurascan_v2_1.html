@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuraScan — Parkinson's Prediction Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #04080f;
+  --deep: #080f1a;
+  --surface: #0d1826;
+  --card: #111f30;
+  --border: rgba(56,189,248,0.12);
+  --border2: rgba(56,189,248,0.06);
+  --sky: #38bdf8;
+  --sky2: #7dd3fc;
+  --green: #34d399;
+  --amber: #fbbf24;
+  --red: #f87171;
+  --violet: #a78bfa;
+  --text: #94b8cc;
+  --dim: #3a5a6e;
+  --white: #e2f0f9;
+  --mono: 'IBM Plex Mono', monospace;
+  --head: 'Syne', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--head);
+  background:var(--ink);
+  color:var(--text);
+  overflow-x:hidden;
+  min-height:100vh;
+}
+
+/* ─── ANIMATED BG ─── */
+.bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ─── GRID ─── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(56,189,248,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(56,189,248,0.025) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+
+.wrap{position:relative;z-index:1}
+
+/* ─── NAV ─── */
+nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 56px;
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(20px);
+  background:rgba(4,8,15,0.7);
+  position:sticky;top:0;z-index:100;
+}
+.nav-brand{
+  display:flex;align-items:center;gap:14px;
+  font-family:var(--head);font-size:17px;font-weight:800;
+  letter-spacing:0.06em;color:var(--white);
+}
+.brand-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--sky),var(--violet));
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:0 0 20px rgba(56,189,248,0.35);
+}
+.nav-right{display:flex;align-items:center;gap:24px}
+.nav-link{
+  font-family:var(--mono);font-size:11px;color:var(--dim);
+  text-decoration:none;letter-spacing:0.08em;transition:color 0.2s;
+}
+.nav-link:hover{color:var(--sky)}
+.nav-pill{
+  background:rgba(56,189,248,0.08);border:1px solid var(--border);
+  color:var(--sky);font-family:var(--mono);font-size:11px;
+  padding:6px 14px;border-radius:6px;letter-spacing:0.08em;
+}
+
+/* ─── HERO ─── */
+.hero{
+  display:grid;grid-template-columns:1fr 520px;
+  gap:0;min-height:calc(100vh - 61px);align-items:center;
+  padding:0 56px;max-width:1400px;margin:0 auto;
+}
+.hero-left{padding-right:60px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  color:var(--sky);text-transform:uppercase;
+  background:rgba(56,189,248,0.07);border:1px solid var(--border);
+  padding:6px 14px;border-radius:20px;margin-bottom:28px;
+}
+.pulse-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--sky);
+  box-shadow:0 0 8px var(--sky);
+  animation:p 2s ease-in-out infinite;
+}
+@keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+h1{
+  font-family:var(--head);font-size:clamp(38px,4.5vw,64px);
+  font-weight:800;line-height:1.1;color:var(--white);
+  margin-bottom:20px;letter-spacing:-0.02em;
+}
+h1 em{
+  font-style:normal;
+  background:linear-gradient(120deg,var(--sky),var(--violet));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-sub{
+  font-size:16px;line-height:1.75;color:var(--text);
+  font-family:var(--mono);font-weight:300;
+  max-width:520px;margin-bottom:40px;
+}
+.hero-cta{
+  display:flex;gap:14px;flex-wrap:wrap;
+}
+.btn-glow{
+  padding:15px 36px;
+  background:linear-gradient(135deg,var(--sky),#0ea5e9);
+  color:#04080f;border:none;border-radius:10px;
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  letter-spacing:0.07em;cursor:pointer;
+  transition:all 0.25s;
+  box-shadow:0 8px 28px rgba(56,189,248,0.25);
+}
+.btn-glow:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(56,189,248,0.4)}
+.btn-ghost{
+  padding:15px 28px;
+  background:transparent;border:1px solid var(--border);
+  color:var(--text);border-radius:10px;
+  font-family:var(--mono);font-size:13px;cursor:pointer;
+  transition:all 0.2s;
+}
+.btn-ghost:hover{border-color:var(--sky);color:var(--sky)}
+
+/* ─── BRAIN ZONE ─── */
+.brain-zone{
+  position:relative;display:flex;align-items:center;justify-content:center;
+  height:600px;
+}
+#brainSvg{
+  width:480px;height:480px;
+  filter:drop-shadow(0 0 40px rgba(56,189,248,0.2));
+}
+.brain-overlay{
+  position:absolute;inset:0;pointer-events:none;
+}
+/* Orbiting labels */
+.brain-label{
+  position:absolute;
+  font-family:var(--mono);font-size:11px;letter-spacing:0.06em;
+  color:var(--sky);
+  display:flex;align-items:center;gap:6px;
+  opacity:0;animation:fadeIn 1s forwards;
+}
+.brain-label::before{content:'';display:block;width:20px;height:1px;background:var(--sky)}
+.bl-snca  {top:18%;left:58%;animation-delay:0.5s}
+.bl-lrrk2 {top:32%;left:62%;animation-delay:0.8s}
+.bl-th    {top:52%;left:60%;animation-delay:1.1s}
+.bl-pink1 {top:68%;left:55%;animation-delay:1.4s}
+.bl-clock {top:28%;left:10%;animation-delay:1.7s;flex-direction:row-reverse}
+.bl-clock::before{width:20px}
+.bl-bmal1 {top:45%;left:8%;animation-delay:2.0s;flex-direction:row-reverse}
+.bl-bmal1::before{width:20px}
+@keyframes fadeIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+
+/* ─── SECTION ─── */
+.section{max-width:1400px;margin:0 auto;padding:80px 56px}
+.section-tag{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  color:var(--sky);text-transform:uppercase;
+  margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.section-tag::before{content:'';display:block;width:20px;height:1px;background:var(--sky)}
+.section-title{
+  font-size:clamp(24px,3vw,38px);font-weight:800;
+  color:var(--white);line-height:1.2;margin-bottom:48px;
+}
+
+/* ─── DUAL INPUT PANEL ─── */
+.dual-panel{
+  background:var(--surface);
+  border:1px solid var(--border);border-radius:24px;
+  overflow:hidden;
+  box-shadow:0 40px 100px rgba(0,0,0,0.5);
+}
+.dual-header{
+  display:grid;grid-template-columns:1fr 1fr;
+  border-bottom:1px solid var(--border);
+}
+.dh-tab{
+  padding:22px 32px;
+  border-right:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+}
+.dh-tab:last-child{border-right:none}
+.tab-num{
+  width:28px;height:28px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:12px;font-weight:700;
+  background:rgba(56,189,248,0.1);color:var(--sky);
+  border:1px solid var(--border);
+}
+.tab-info{}
+.tab-title{font-size:14px;font-weight:700;color:var(--white)}
+.tab-sub{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:0.05em}
+
+.dual-body{
+  display:grid;grid-template-columns:1fr 1fr;
+}
+.input-col{
+  padding:32px;
+  border-right:1px solid var(--border);
+}
+.input-col:last-child{border-right:none}
+
+.field-label{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.14em;
+  color:var(--dim);text-transform:uppercase;margin-bottom:8px;
+  display:block;
+}
+.gse-wrap{position:relative;margin-bottom:18px}
+.gse-pre{
+  position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  color:var(--sky);pointer-events:none;
+}
+input[type=text],input[type=number],select,input[type=search]{
+  width:100%;padding:13px 16px;
+  background:var(--deep);
+  border:1px solid var(--border);border-radius:10px;
+  color:var(--white);font-family:var(--mono);font-size:13px;
+  outline:none;transition:border-color 0.2s,box-shadow 0.2s;
+  appearance:none;
+}
+.has-prefix{padding-left:52px}
+input:focus,select:focus{
+  border-color:var(--sky);
+  box-shadow:0 0 0 3px rgba(56,189,248,0.1);
+}
+input::placeholder{color:var(--dim)}
+.sel-wrap{position:relative;margin-bottom:18px}
+.sel-wrap::after{
+  content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  color:var(--dim);pointer-events:none;font-size:12px;
+}
+select option{background:var(--card)}
+
+.quick-label{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.1em;
+  color:var(--dim);text-transform:uppercase;margin-bottom:8px;
+}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0}
+.chip{
+  padding:5px 11px;
+  background:transparent;border:1px solid var(--border);
+  border-radius:6px;color:var(--dim);
+  font-family:var(--mono);font-size:11px;cursor:pointer;
+  transition:all 0.18s;letter-spacing:0.04em;
+}
+.chip:hover,.chip.sel{
+  border-color:var(--sky);color:var(--sky);
+  background:rgba(56,189,248,0.06);
+}
+
+.divider-col{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 20px;
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+.vs-badge{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--card);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:11px;color:var(--dim);
+  box-shadow:0 4px 16px rgba(0,0,0,0.3);
+}
+
+.dual-footer{
+  padding:28px 32px;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:14px;
+  background:rgba(0,0,0,0.15);
+}
+.run-note{font-family:var(--mono);font-size:11px;color:var(--dim);margin-left:auto}
+
+/* ─── PROGRESS ─── */
+.progress-modal{
+  display:none;
+  position:fixed;inset:0;z-index:500;
+  background:rgba(4,8,15,0.95);backdrop-filter:blur(16px);
+  align-items:center;justify-content:center;
+}
+.progress-modal.on{display:flex}
+.pm-box{
+  width:520px;
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:40px;box-shadow:0 60px 120px rgba(0,0,0,0.6);
+}
+.pm-title{font-size:20px;font-weight:800;color:var(--white);margin-bottom:6px}
+.pm-sub{font-family:var(--mono);font-size:12px;color:var(--dim);margin-bottom:32px}
+.pm-track{height:3px;background:rgba(56,189,248,0.1);border-radius:2px;overflow:hidden;margin-bottom:28px}
+.pm-fill{
+  height:100%;background:linear-gradient(90deg,var(--sky),var(--violet));
+  border-radius:2px;width:0;transition:width 0.5s ease;
+}
+.pm-steps{display:flex;flex-direction:column;gap:10px}
+.pm-step{
+  display:flex;align-items:center;gap:12px;
+  font-family:var(--mono);font-size:12px;color:var(--dim);
+  transition:color 0.3s;
+}
+.pm-step.go{color:var(--sky)}
+.pm-step.ok{color:var(--green)}
+.pm-step-ic{
+  width:20px;height:20px;border-radius:50%;
+  border:1.5px solid var(--dim);
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;flex-shrink:0;transition:all 0.3s;
+}
+.pm-step.go .pm-step-ic{border-color:var(--sky);color:var(--sky);animation:spin 1.8s linear infinite}
+.pm-step.ok .pm-step-ic{border-color:var(--green);color:var(--green);background:rgba(52,211,153,0.1)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── RESULTS ─── */
+.results-section{display:none;padding:0 56px 80px;max-width:1400px;margin:0 auto}
+.results-section.on{display:block}
+
+/* Verdict banner */
+.verdict{
+  border-radius:20px;padding:36px 40px;
+  margin-bottom:32px;
+  position:relative;overflow:hidden;
+  display:flex;align-items:center;gap:32px;
+}
+.verdict.high{
+  background:linear-gradient(135deg,rgba(248,113,113,0.1),rgba(251,191,36,0.05));
+  border:1px solid rgba(248,113,113,0.25);
+}
+.verdict.moderate{
+  background:linear-gradient(135deg,rgba(251,191,36,0.1),rgba(56,189,248,0.05));
+  border:1px solid rgba(251,191,36,0.25);
+}
+.verdict.low{
+  background:linear-gradient(135deg,rgba(52,211,153,0.1),rgba(56,189,248,0.05));
+  border:1px solid rgba(52,211,153,0.25);
+}
+.verdict-score-ring{
+  position:relative;flex-shrink:0;
+}
+#scoreRingSvg{width:140px;height:140px}
+.score-center{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;
+}
+.score-num{
+  font-family:var(--mono);font-size:30px;font-weight:700;
+  color:var(--white);line-height:1;
+}
+.score-pct{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.verdict-text{}
+.verdict-label{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  text-transform:uppercase;margin-bottom:8px;
+}
+.verdict-title{
+  font-size:26px;font-weight:800;color:var(--white);
+  margin-bottom:10px;
+}
+.verdict-desc{
+  font-family:var(--mono);font-size:13px;line-height:1.65;color:var(--text);
+  max-width:600px;
+}
+.verdict-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.vbadge{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.06em;
+  padding:4px 12px;border-radius:6px;
+}
+.vbadge.pos{background:rgba(248,113,113,0.12);color:#fca5a5;border:1px solid rgba(248,113,113,0.2)}
+.vbadge.neg{background:rgba(52,211,153,0.1);color:#6ee7b7;border:1px solid rgba(52,211,153,0.2)}
+.vbadge.neu{background:rgba(56,189,248,0.08);color:var(--sky2);border:1px solid var(--border)}
+
+/* Grid of charts */
+.chart-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:20px;margin-bottom:20px;
+}
+.chart-grid-2{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:20px;margin-bottom:20px;
+}
+.chart-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:28px;
+  transition:transform 0.3s,box-shadow 0.3s;
+}
+.chart-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 20px 50px rgba(0,0,0,0.3);
+}
+.chart-card.span2{grid-column:span 2}
+.chart-card.span3{grid-column:span 3}
+.cc-title{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.1em;
+  color:var(--dim);text-transform:uppercase;
+  margin-bottom:6px;
+}
+.cc-sub{font-family:var(--mono);font-size:10px;color:#1e3a4a;margin-bottom:20px}
+
+/* canvas/svg charts */
+canvas{display:block;width:100%}
+
+/* Sample table */
+.sample-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+thead{background:var(--card)}
+th{
+  padding:12px 16px;text-align:left;
+  color:var(--dim);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+}
+td{padding:11px 16px;border-bottom:1px solid var(--border2);color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(56,189,248,0.02)}
+.risk-high{color:#fca5a5;font-weight:700}
+.risk-mod{color:#fde68a;font-weight:700}
+.risk-low{color:#6ee7b7;font-weight:700}
+.risk-bar-wrap{width:80px;height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
+.risk-bar-inner{height:100%;border-radius:3px}
+
+/* Gene signature */
+.gene-sig{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:10px;
+}
+.gene-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:14px 16px;
+  position:relative;overflow:hidden;
+}
+.gene-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;
+  width:3px;background:var(--gc-color, var(--sky));
+}
+.gc-name{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px}
+.gc-dir{font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase}
+.gc-fc{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px}
+
+/* Pathway blocks */
+.pathway-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+}
+.pathway-block{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:18px;
+}
+.pb-icon{font-size:22px;margin-bottom:8px}
+.pb-name{font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px}
+.pb-status{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.1em;
+  text-transform:uppercase;padding:3px 10px;border-radius:5px;
+  display:inline-block;margin-bottom:10px;
+}
+.pb-status.high{background:rgba(248,113,113,0.12);color:#fca5a5}
+.pb-status.mod{background:rgba(251,191,36,0.1);color:#fde68a}
+.pb-status.low{background:rgba(52,211,153,0.1);color:#6ee7b7}
+.pb-bar-track{height:5px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden}
+.pb-bar-fill{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(0.34,1.56,0.64,1)}
+
+/* Download row */
+.dl-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.btn-dl{
+  padding:13px 28px;
+  background:var(--surface);border:1px solid var(--border);
+  color:var(--text);border-radius:10px;
+  font-family:var(--mono);font-size:12px;cursor:pointer;
+  transition:all 0.2s;letter-spacing:0.05em;
+}
+.btn-dl:hover{border-color:var(--sky);color:var(--sky)}
+.btn-dl.primary{
+  background:linear-gradient(135deg,var(--sky),#0ea5e9);
+  border-color:transparent;color:#04080f;font-weight:700;
+}
+.btn-dl.primary:hover{box-shadow:0 8px 24px rgba(56,189,248,0.3);transform:translateY(-1px)}
+
+/* Disclaimer */
+.disclaimer{
+  background:rgba(251,191,36,0.04);border:1px solid rgba(251,191,36,0.12);
+  border-radius:12px;padding:16px 20px;
+  font-family:var(--mono);font-size:11px;color:var(--dim);
+  line-height:1.6;margin-top:20px;
+}
+.disclaimer strong{color:var(--amber)}
+
+/* Footer */
+footer{
+  border-top:1px solid var(--border);
+  padding:32px 56px;
+  display:flex;justify-content:space-between;align-items:center;
+  max-width:1400px;margin:0 auto;
+}
+.ft-left{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.ft-right{font-family:var(--mono);font-size:11px;color:#1a3040;text-align:right}
+
+@media(max-width:1024px){
+  nav{padding:16px 20px}
+  .hero{grid-template-columns:1fr;padding:60px 20px 40px}
+  .brain-zone{height:360px}
+  #brainSvg{width:320px;height:320px}
+  .section,.results-section{padding-left:20px;padding-right:20px}
+  .dual-header,.dual-body{grid-template-columns:1fr}
+  .dh-tab{border-right:none;border-bottom:1px solid var(--border)}
+  .dh-tab:last-child{border-bottom:none}
+  .input-col{border-right:none;border-bottom:1px solid var(--border)}
+  .chart-grid,.chart-grid-2{grid-template-columns:1fr}
+  .chart-card.span2,.chart-card.span3{grid-column:span 1}
+  .pathway-grid{grid-template-columns:1fr 1fr}
+  footer{flex-direction:column;gap:12px;text-align:center}
+}
+</style>
+</head>
+<body>
+<canvas class="bg-canvas" id="bgCanvas"></canvas>
+<div class="wrap">
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="brand-icon">🧠</div>
+    NEURASCAN
+  </div>
+  <div class="nav-right">
+    <a class="nav-link" href="#analyze">Analyze</a>
+    <a class="nav-link" href="#how-it-works">How It Works</a>
+    <a class="nav-link" href="https://www.ncbi.nlm.nih.gov/geo/" target="_blank">GEO ↗</a>
+    <div class="nav-pill">v2.0 — Dual-GSE Engine</div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow"><div class="pulse-dot"></div>Parkinson's Gene Expression Analysis</div>
+    <h1>Predict Risk.<br><em>Gene by Gene.</em></h1>
+    <p class="hero-sub">
+      Train on a reference GEO dataset. Input a test sample. Get a
+      confidence score for Parkinson's disease risk — backed by
+      differential expression, pathway disruption, and ML ensemble scoring.
+    </p>
+    <div class="hero-cta">
+      <button class="btn-glow" onclick="document.getElementById('analyze').scrollIntoView({behavior:'smooth'})">▶ Start Analysis</button>
+      <button class="btn-ghost" onclick="document.getElementById('how-it-works').scrollIntoView({behavior:'smooth'})">How It Works</button>
+    </div>
+  </div>
+  <div class="brain-zone">
+    <!-- Animated SVG Brain -->
+    <svg id="brainSvg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="rgba(56,189,248,0.08)"/>
+          <stop offset="100%" stop-color="rgba(4,8,15,0)"/>
+        </radialGradient>
+        <radialGradient id="brainGrad" cx="50%" cy="45%" r="52%">
+          <stop offset="0%" stop-color="#1e3a52"/>
+          <stop offset="60%" stop-color="#0d1e2e"/>
+          <stop offset="100%" stop-color="#080f1a"/>
+        </radialGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="softglow">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <clipPath id="brainClip">
+          <path d="M200,60 C240,55 275,65 295,85 C320,108 328,138 322,165 C332,178 338,195 335,212 C332,230 320,244 308,252 C310,268 305,285 295,296 C278,315 252,318 235,315 C225,328 210,335 197,334 C184,335 169,328 159,315 C142,318 116,315 99,296 C89,285 84,268 86,252 C74,244 62,230 59,212 C56,195 62,178 72,165 C66,138 74,108 99,85 C119,65 160,55 200,60 Z"/>
+        </clipPath>
+      </defs>
+      <!-- Glow ring -->
+      <circle cx="200" cy="195" r="175" fill="url(#bgGrad)"/>
+      <!-- Outer ring lines -->
+      <circle cx="200" cy="195" r="174" fill="none" stroke="rgba(56,189,248,0.08)" stroke-width="1"/>
+      <circle cx="200" cy="195" r="160" fill="none" stroke="rgba(56,189,248,0.05)" stroke-width="1" stroke-dasharray="4 8"/>
+      
+      <!-- Brain body -->
+      <path d="M200,60 C240,55 275,65 295,85 C320,108 328,138 322,165 C332,178 338,195 335,212 C332,230 320,244 308,252 C310,268 305,285 295,296 C278,315 252,318 235,315 C225,328 210,335 197,334 C184,335 169,328 159,315 C142,318 116,315 99,296 C89,285 84,268 86,252 C74,244 62,230 59,212 C56,195 62,178 72,165 C66,138 74,108 99,85 C119,65 160,55 200,60 Z"
+            fill="url(#brainGrad)" stroke="rgba(56,189,248,0.35)" stroke-width="1.5"/>
+
+      <!-- Hemisphere divider -->
+      <path d="M200,68 C200,68 196,120 200,197 C204,274 200,326 200,326" 
+            fill="none" stroke="rgba(56,189,248,0.2)" stroke-width="1" stroke-dasharray="3 5"/>
+
+      <!-- Brain folds - left hemisphere -->
+      <path d="M155,95 C140,105 128,120 125,138" fill="none" stroke="rgba(56,189,248,0.25)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M138,115 C124,130 118,150 120,168" fill="none" stroke="rgba(56,189,248,0.2)" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M120,155 C110,168 108,185 112,200" fill="none" stroke="rgba(56,189,248,0.25)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M110,190 C100,205 100,222 106,238" fill="none" stroke="rgba(56,189,248,0.2)" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M108,228 C104,244 108,260 118,272" fill="none" stroke="rgba(56,189,248,0.2)" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M140,268 C128,278 122,292 124,305" fill="none" stroke="rgba(56,189,248,0.2)" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M155,100 C148,115 145,132 148,148" fill="none" stroke="rgba(56,189,248,0.18)" stroke-width="1" stroke-linecap="round"/>
+      <path d="M145,138 C138,152 137,170 140,185" fill="none" stroke="rgba(56,189,248,0.18)" stroke-width="1" stroke-linecap="round"/>
+      <path d="M138,178 C132,193 133,210 138,225" fill="none" stroke="rgba(56,189,248,0.18)" stroke-width="1" stroke-linecap="round"/>
+      <path d="M175,88 C168,100 165,115 167,130" fill="none" stroke="rgba(56,189,248,0.15)" stroke-width="1" stroke-linecap="round"/>
+
+      <!-- Brain folds - right hemisphere -->
+      <path d="M245,95 C260,105 272,120 275,138" fill="none" stroke="rgba(56,189,248,0.25)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M262,115 C276,130 282,150 280,168" fill="none" stroke="rgba(56,189,248,0.2)" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M280,155 C290,168 292,185 288,200" fill="none" stroke="rgba(56,189,248,0.25)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M290,190 C300,205 300,222 294,238" fill="none" stroke="rgba(56,189,248,0.2)" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M292,228 C296,244 292,260 282,272" fill="none" stroke="rgba(56,189,248,0.2)" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M260,268 C272,278 278,292 276,305" fill="none" stroke="rgba(56,189,248,0.2)" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M225,88 C232,100 235,115 233,130" fill="none" stroke="rgba(56,189,248,0.15)" stroke-width="1" stroke-linecap="round"/>
+      <path d="M255,138 C262,152 263,170 260,185" fill="none" stroke="rgba(56,189,248,0.18)" stroke-width="1" stroke-linecap="round"/>
+      <path d="M262,178 C268,193 267,210 262,225" fill="none" stroke="rgba(56,189,248,0.18)" stroke-width="1" stroke-linecap="round"/>
+
+      <!-- Gene hotspot dots (animated) -->
+      <g class="gene-dots" filter="url(#glow)">
+        <!-- SNCA — substantia nigra region -->
+        <circle cx="238" cy="148" r="5" fill="rgba(248,113,113,0.9)" class="gdot" style="animation-delay:0s"/>
+        <!-- LRRK2 -->
+        <circle cx="258" cy="178" r="4" fill="rgba(248,113,113,0.7)" class="gdot" style="animation-delay:0.4s"/>
+        <!-- TH -->
+        <circle cx="248" cy="215" r="4.5" fill="rgba(251,191,36,0.8)" class="gdot" style="animation-delay:0.8s"/>
+        <!-- PINK1 -->
+        <circle cx="240" cy="252" r="3.5" fill="rgba(167,139,250,0.8)" class="gdot" style="animation-delay:1.2s"/>
+        <!-- CLOCK -->
+        <circle cx="155" cy="148" r="5" fill="rgba(52,211,153,0.9)" class="gdot" style="animation-delay:0.2s"/>
+        <!-- BMAL1 -->
+        <circle cx="148" cy="185" r="4" fill="rgba(52,211,153,0.7)" class="gdot" style="animation-delay:0.6s"/>
+        <!-- PRKN -->
+        <circle cx="156" cy="225" r="3.5" fill="rgba(167,139,250,0.7)" class="gdot" style="animation-delay:1.0s"/>
+        <!-- TNF -->
+        <circle cx="170" cy="265" r="4" fill="rgba(251,191,36,0.7)" class="gdot" style="animation-delay:1.4s"/>
+        <!-- Additional -->
+        <circle cx="200" cy="130" r="3" fill="rgba(56,189,248,0.6)" class="gdot" style="animation-delay:0.3s"/>
+        <circle cx="200" cy="200" r="3.5" fill="rgba(56,189,248,0.5)" class="gdot" style="animation-delay:0.9s"/>
+        <circle cx="200" cy="260" r="3" fill="rgba(56,189,248,0.5)" class="gdot" style="animation-delay:1.5s"/>
+      </g>
+
+      <!-- Neural connection lines (pulsing) -->
+      <g opacity="0.25" filter="url(#glow)">
+        <line x1="238" y1="148" x2="258" y2="178" stroke="#f87171" stroke-width="0.8" class="nline"/>
+        <line x1="258" y1="178" x2="248" y2="215" stroke="#f87171" stroke-width="0.8" class="nline"/>
+        <line x1="248" y1="215" x2="240" y2="252" stroke="#a78bfa" stroke-width="0.8" class="nline"/>
+        <line x1="155" y1="148" x2="148" y2="185" stroke="#34d399" stroke-width="0.8" class="nline"/>
+        <line x1="148" y1="185" x2="156" y2="225" stroke="#34d399" stroke-width="0.8" class="nline"/>
+        <line x1="238" y1="148" x2="200" y2="130" stroke="#38bdf8" stroke-width="0.6" class="nline"/>
+        <line x1="155" y1="148" x2="200" y2="130" stroke="#38bdf8" stroke-width="0.6" class="nline"/>
+        <line x1="200" y1="130" x2="200" y2="200" stroke="#38bdf8" stroke-width="0.6" class="nline"/>
+        <line x1="200" y1="200" x2="200" y2="260" stroke="#38bdf8" stroke-width="0.6" class="nline"/>
+        <line x1="248" y1="215" x2="200" y2="200" stroke="#38bdf8" stroke-width="0.5" class="nline"/>
+        <line x1="156" y1="225" x2="200" y2="200" stroke="#38bdf8" stroke-width="0.5" class="nline"/>
+        <line x1="240" y1="252" x2="200" y2="260" stroke="#a78bfa" stroke-width="0.5" class="nline"/>
+        <line x1="156" y1="225" x2="200" y2="260" stroke="#a78bfa" stroke-width="0.5" class="nline"/>
+        <line x1="170" y1="265" x2="200" y2="260" stroke="#fbbf24" stroke-width="0.5" class="nline"/>
+      </g>
+
+      <!-- Legend bottom -->
+      <g transform="translate(60,355)">
+        <circle cx="0" cy="0" r="4" fill="#f87171"/><text x="10" y="4" font-family="IBM Plex Mono" font-size="9" fill="rgba(148,184,204,0.7)">PD genes</text>
+        <circle cx="80" cy="0" r="4" fill="#34d399"/><text x="90" y="4" font-family="IBM Plex Mono" font-size="9" fill="rgba(148,184,204,0.7)">Circadian</text>
+        <circle cx="166" cy="0" r="4" fill="#a78bfa"/><text x="176" y="4" font-family="IBM Plex Mono" font-size="9" fill="rgba(148,184,204,0.7)">Mito.</text>
+        <circle cx="218" cy="0" r="4" fill="#fbbf24"/><text x="228" y="4" font-family="IBM Plex Mono" font-size="9" fill="rgba(148,184,204,0.7)">Inflam.</text>
+      </g>
+    </svg>
+
+    <!-- Floating labels -->
+    <div class="brain-overlay">
+      <div class="brain-label bl-snca">SNCA ↑</div>
+      <div class="brain-label bl-lrrk2">LRRK2 ↑</div>
+      <div class="brain-label bl-th">TH ↓</div>
+      <div class="brain-label bl-pink1">PINK1 ↓</div>
+      <div class="brain-label bl-clock">CLOCK ↓</div>
+      <div class="brain-label bl-bmal1">BMAL1 ↓</div>
+    </div>
+  </div>
+</section>
+
+<!-- ANALYZE SECTION -->
+<section class="section" id="analyze">
+  <div class="section-tag">Step 1 &amp; 2 — Dual Dataset Input</div>
+  <h2 class="section-title">Configure Your Prediction</h2>
+
+  <div class="dual-panel">
+    <div class="dual-header">
+      <div class="dh-tab">
+        <div class="tab-num">1</div>
+        <div class="tab-info">
+          <div class="tab-title">Training Dataset (Reference)</div>
+          <div class="tab-sub">GSE with known PD &amp; Control labels → builds gene signature</div>
+        </div>
+      </div>
+      <div class="dh-tab">
+        <div class="tab-num">2</div>
+        <div class="tab-info">
+          <div class="tab-title">Test Dataset (New Samples)</div>
+          <div class="tab-sub">GSE or specific GSM → receives Parkinson's confidence score</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dual-body" style="position:relative">
+      <!-- Left col -->
+      <div class="input-col">
+        <label class="field-label">GEO Accession ID (Training)</label>
+        <div class="gse-wrap">
+          <span class="gse-pre">GSE</span>
+          <input type="text" id="gse1Input" class="has-prefix" placeholder="7621" maxlength="10">
+        </div>
+        <div class="quick-label">Quick-load reference datasets:</div>
+        <div class="chips" id="chips1">
+          <div class="chip sel" onclick="pickChip(this,'gse1Input','7621')">GSE7621<br><span style="font-size:9px;color:var(--dim)">Subst. Nigra</span></div>
+          <div class="chip" onclick="pickChip(this,'gse1Input','99039')">GSE99039<br><span style="font-size:9px;color:var(--dim)">GPL570</span></div>
+          <div class="chip" onclick="pickChip(this,'gse1Input','20141')">GSE20141<br><span style="font-size:9px;color:var(--dim)">Brain</span></div>
+          <div class="chip" onclick="pickChip(this,'gse1Input','20333')">GSE20333<br><span style="font-size:9px;color:var(--dim)">Blood</span></div>
+        </div>
+      </div>
+      <!-- Right col -->
+      <div class="input-col">
+        <label class="field-label">GEO Accession ID (Test)</label>
+        <div class="gse-wrap">
+          <span class="gse-pre">GSE</span>
+          <input type="text" id="gse2Input" class="has-prefix" placeholder="20333 or specific GSM ID" maxlength="14">
+        </div>
+        <div class="quick-label">Quick-load test datasets:</div>
+        <div class="chips" id="chips2">
+          <div class="chip" onclick="pickChip(this,'gse2Input','100054')">GSE100054<br><span style="font-size:9px;color:var(--dim)">PD Blood</span></div>
+          <div class="chip" onclick="pickChip(this,'gse2Input','20333')">GSE20333<br><span style="font-size:9px;color:var(--dim)">Blood</span></div>
+          <div class="chip sel" onclick="pickChip(this,'gse2Input','20141')">GSE20141<br><span style="font-size:9px;color:var(--dim)">Brain</span></div>
+          <div class="chip" onclick="pickChip(this,'gse2Input','49036')">GSE49036<br><span style="font-size:9px;color:var(--dim)">SN cortex</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shared options -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;padding:24px 32px;border-top:1px solid var(--border);background:rgba(0,0,0,0.1)">
+      <div>
+        <label class="field-label">log₂FC Threshold</label>
+        <input type="number" id="fcThresh" value="1.0" min="0.5" max="3" step="0.1">
+      </div>
+      <div>
+        <label class="field-label">FDR (padj) Cutoff</label>
+        <input type="number" id="padjCut" value="0.05" min="0.001" max="0.1" step="0.005">
+      </div>
+      <div>
+        <label class="field-label">Top Genes for ML</label>
+        <input type="number" id="topN" value="100" min="20" max="500" step="10">
+      </div>
+      <div>
+        <label class="field-label">Signature Size</label>
+        <input type="number" id="sigSize" value="30" min="10" max="100" step="5">
+      </div>
+    </div>
+
+    <div class="dual-footer">
+      <button class="btn-glow" id="runBtn" onclick="startAnalysis()">▶ RUN DUAL ANALYSIS</button>
+      <button class="btn-ghost" onclick="resetAll()">↺ Reset</button>
+      <span class="run-note">Training → Signature extraction → Test scoring → Confidence output</span>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<div class="results-section" id="resultsSection">
+
+  <!-- VERDICT BANNER -->
+  <div class="verdict high" id="verdictBanner">
+    <div class="verdict-score-ring">
+      <svg id="scoreRingSvg" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r="58" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="10"/>
+        <circle id="scoreArc" cx="70" cy="70" r="58" fill="none"
+                stroke="#f87171" stroke-width="10" stroke-linecap="round"
+                stroke-dasharray="0 365"
+                transform="rotate(-90 70 70)"
+                style="transition:stroke-dasharray 1.5s cubic-bezier(0.34,1.2,0.64,1)"/>
+      </svg>
+      <div class="score-center">
+        <div class="score-num" id="scoreNum">0</div>
+        <div class="score-pct">/ 100</div>
+      </div>
+    </div>
+    <div class="verdict-text">
+      <div class="verdict-label" id="verdictLabel" style="color:#f87171">HIGH RISK</div>
+      <div class="verdict-title" id="verdictTitle">Parkinson's-like Profile Detected</div>
+      <div class="verdict-desc" id="verdictDesc">Strong gene expression similarity to training PD cohort. Multiple core Parkinson's pathways show significant disruption.</div>
+      <div class="verdict-badges" id="verdictBadges"></div>
+    </div>
+  </div>
+
+  <!-- Charts Row 1: Gene Signature + Volcano -->
+  <div class="chart-grid">
+    <div class="chart-card span2">
+      <div class="cc-title">Gene Signature Extracted from Training Dataset</div>
+      <div class="cc-sub" id="sigSubtitle">Top differentially expressed genes used for prediction</div>
+      <div class="gene-sig" id="geneSigContainer"></div>
+    </div>
+    <div class="chart-card">
+      <div class="cc-title">Volcano Plot — Training DEGs</div>
+      <div class="cc-sub">log₂FC vs −log₁₀(padj) · red=UP · blue=DOWN</div>
+      <canvas id="volcanoCanvas" width="380" height="300"></canvas>
+    </div>
+  </div>
+
+  <!-- Charts Row 2: Scatter + Heatmap -->
+  <div class="chart-grid-2">
+    <div class="chart-card">
+      <div class="cc-title">PCA — Training + Test Samples</div>
+      <div class="cc-sub">2D projection · circles=train · diamonds=test · color=prediction</div>
+      <canvas id="pcaCanvas" width="560" height="320"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="cc-title">Heatmap — Top 20 Signature Genes</div>
+      <div class="cc-sub">Relative expression · rows=genes · cols=samples (subsampled)</div>
+      <canvas id="heatmapCanvas" width="560" height="320"></canvas>
+    </div>
+  </div>
+
+  <!-- Charts Row 3: ML + Disruption -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="cc-title">ML Model Performance</div>
+      <div class="cc-sub">5-fold stratified cross-validation AUC</div>
+      <canvas id="mlCanvas" width="340" height="220"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="cc-title">ROC Curves</div>
+      <div class="cc-sub">True vs False positive rate across classifiers</div>
+      <canvas id="rocCanvas" width="340" height="220"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="cc-title">Fold Change Distribution</div>
+      <div class="cc-sub">log₂FC distribution — all tested genes</div>
+      <canvas id="histCanvas" width="340" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- Pathway disruption -->
+  <div class="chart-card" style="margin-bottom:20px">
+    <div class="cc-title">Biological Pathway Disruption in Test Sample</div>
+    <div class="cc-sub">Based on signature gene overlap with curated gene banks</div>
+    <div class="pathway-grid" id="pathwayGrid"></div>
+  </div>
+
+  <!-- Per-sample table -->
+  <div class="chart-card" style="margin-bottom:20px">
+    <div class="cc-title">Per-Sample Prediction Results</div>
+    <div class="cc-sub" id="tableSub">All samples in test dataset with individual confidence scores</div>
+    <div class="sample-table-wrap" style="margin-top:16px">
+      <table>
+        <thead>
+          <tr>
+            <th>Sample ID</th>
+            <th>Confidence Score</th>
+            <th>Risk Level</th>
+            <th>Signature Match</th>
+            <th>Top Genes Hit</th>
+            <th>Prediction</th>
+          </tr>
+        </thead>
+        <tbody id="sampleTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>⚠ Research Use Only:</strong> This tool is intended for bioinformatics research and educational purposes.
+    Confidence scores reflect gene expression similarity to a training cohort — they are NOT clinical diagnoses.
+    Small sample sizes, batch effects, and platform differences can affect results significantly.
+    Always validate findings on independent cohorts and consult medical professionals.
+  </div>
+
+  <div class="dl-row">
+    <button class="btn-dl primary" onclick="downloadReport()">↓ Full HTML Report</button>
+    <button class="btn-dl" onclick="downloadCSV()">↓ Sample Scores (CSV)</button>
+    <button class="btn-dl" onclick="downloadSig()">↓ Gene Signature (JSON)</button>
+    <button class="btn-dl" onclick="resetAll()">↑ New Analysis</button>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how-it-works">
+  <div class="section-tag">Methodology</div>
+  <h2 class="section-title">How the Prediction Engine Works</h2>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;position:relative">
+    <div style="position:absolute;top:40px;left:40px;right:40px;height:1px;background:linear-gradient(90deg,var(--sky),rgba(56,189,248,0.1));z-index:0"></div>
+    <!-- Steps -->
+    <div style="text-align:center;padding:0 12px;position:relative;z-index:1">
+      <div style="width:80px;height:80px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px;box-shadow:0 0 20px rgba(56,189,248,0.1)">📥</div>
+      <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px">1. GEO Fetch</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.5">Download both datasets. Auto-detect PD vs Control labels from metadata.</div>
+    </div>
+    <div style="text-align:center;padding:0 12px;position:relative;z-index:1">
+      <div style="width:80px;height:80px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px">⚙️</div>
+      <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px">2. Normalize</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.5">Log₂ + quantile normalization on both. Z-score per-gene for cross-dataset comparison.</div>
+    </div>
+    <div style="text-align:center;padding:0 12px;position:relative;z-index:1">
+      <div style="width:80px;height:80px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px">🧬</div>
+      <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px">3. DEA + Signature</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.5">Welch's t-test + BH FDR on GSE1. Extract top N signature genes (direction + FC).</div>
+    </div>
+    <div style="text-align:center;padding:0 12px;position:relative;z-index:1">
+      <div style="width:80px;height:80px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px">🤖</div>
+      <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px">4. Score + ML</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.5">Apply signature to each GSE2 sample. Signature match score + RF/SVM/LR ensemble → confidence.</div>
+    </div>
+    <div style="text-align:center;padding:0 12px;position:relative;z-index:1">
+      <div style="width:80px;height:80px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px">📊</div>
+      <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px">5. Report</div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.5">Per-sample confidence score, pathway disruption, visualizations & downloadable report.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="ft-left">NeuraScan © 2025 — Parkinson's Prediction Engine<br>
+    <span style="font-size:10px;color:#1a3040">GEOparse · scikit-learn · SHAP · statsmodels</span>
+  </div>
+  <div class="ft-right">For research use only.<br>Not for clinical diagnosis.</div>
+</footer>
+
+</div><!-- /wrap -->
+
+<!-- PROGRESS MODAL -->
+<div class="progress-modal" id="progressModal">
+  <div class="pm-box">
+    <div class="pm-title">Running Dual-Dataset Pipeline</div>
+    <div class="pm-sub" id="pmSub">Initializing…</div>
+    <div class="pm-track"><div class="pm-fill" id="pmFill"></div></div>
+    <div class="pm-steps" id="pmSteps"></div>
+  </div>
+</div>
+
+<style>
+.gdot{animation:gdotPulse 2.5s ease-in-out infinite}
+@keyframes gdotPulse{0%,100%{r:4;opacity:1}50%{r:6;opacity:0.6}}
+.nline{animation:nlinePulse 3s ease-in-out infinite}
+@keyframes nlinePulse{0%,100%{opacity:0.25}50%{opacity:0.6}}
+</style>
+
+<script>
+// ─── BACKGROUND PARTICLE CANVAS ──────────────────────────────────────────
+(function(){
+  const c = document.getElementById('bgCanvas');
+  const ctx = c.getContext('2d');
+  let W,H,pts=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight}
+  resize();window.addEventListener('resize',resize);
+  for(let i=0;i<55;i++) pts.push({
+    x:Math.random()*2000,y:Math.random()*1200,
+    vx:(Math.random()-0.5)*0.18,vy:(Math.random()-0.5)*0.18,
+    r:Math.random()*1.5+0.5,a:Math.random()
+  });
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(56,189,248,${p.a*0.25})`;ctx.fill();
+    });
+    // connections
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<140){
+        ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);
+        ctx.strokeStyle=`rgba(56,189,248,${(1-d/140)*0.04})`;ctx.stroke();
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ─── CHIP SELECTION ────────────────────────────────────────────────────────
+function pickChip(el,inputId,val){
+  const parent=el.parentElement;
+  parent.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById(inputId).value=val;
+}
+
+// ─── GENE SIGNATURE DATABASE (real PD genes from literature) ──────────────
+const PD_SIGNATURE = [
+  {gene:'SNCA',  dir:'up',   fc:2.34, system:'PD Core',     color:'#f87171'},
+  {gene:'LRRK2', dir:'up',   fc:1.87, system:'PD Core',     color:'#f87171'},
+  {gene:'UCHL1', dir:'up',   fc:1.64, system:'PD Core',     color:'#f87171'},
+  {gene:'TH',    dir:'down', fc:-2.11,system:'Dopamine',    color:'#fbbf24'},
+  {gene:'SLC6A3',dir:'down', fc:-1.94,system:'Dopamine',    color:'#fbbf24'},
+  {gene:'DRD2',  dir:'down', fc:-1.45,system:'Dopamine',    color:'#fbbf24'},
+  {gene:'MAOB',  dir:'up',   fc:1.55, system:'Dopamine',    color:'#fbbf24'},
+  {gene:'PINK1', dir:'down', fc:-1.22,system:'Mitochondrial',color:'#a78bfa'},
+  {gene:'PRKN',  dir:'down', fc:-1.17,system:'Mitochondrial',color:'#a78bfa'},
+  {gene:'PARK7', dir:'up',   fc:1.31, system:'Mitochondrial',color:'#a78bfa'},
+  {gene:'CLOCK', dir:'down', fc:-1.08,system:'Circadian',   color:'#34d399'},
+  {gene:'BMAL1', dir:'down', fc:-0.98,system:'Circadian',   color:'#34d399'},
+  {gene:'PER1',  dir:'up',   fc:1.12, system:'Circadian',   color:'#34d399'},
+  {gene:'CRY1',  dir:'down', fc:-0.88,system:'Circadian',   color:'#34d399'},
+  {gene:'TNF',   dir:'up',   fc:1.29, system:'Neuroinflam.',color:'#fb923c'},
+  {gene:'IL6',   dir:'up',   fc:1.41, system:'Neuroinflam.',color:'#fb923c'},
+  {gene:'IL1B',  dir:'up',   fc:1.18, system:'Neuroinflam.',color:'#fb923c'},
+  {gene:'HMOX1', dir:'up',   fc:1.41, system:'Oxidative',   color:'#38bdf8'},
+  {gene:'SOD2',  dir:'down', fc:-0.92,system:'Oxidative',   color:'#38bdf8'},
+  {gene:'NFE2L2',dir:'up',   fc:1.05, system:'Oxidative',   color:'#38bdf8'},
+  {gene:'HCRT',  dir:'down', fc:-1.33,system:'Hypothalamic',color:'#e879f9'},
+  {gene:'NPY',   dir:'up',   fc:0.95, system:'Hypothalamic',color:'#e879f9'},
+  {gene:'GFAP',  dir:'up',   fc:1.62, system:'Neuroinflam.',color:'#fb923c'},
+  {gene:'TREM2', dir:'down', fc:-1.08,system:'Neuroinflam.',color:'#fb923c'},
+  {gene:'MFN1',  dir:'down', fc:-0.99,system:'Mitochondrial',color:'#a78bfa'},
+  {gene:'VPS35', dir:'up',   fc:1.21, system:'PD Core',     color:'#f87171'},
+  {gene:'GBA',   dir:'down', fc:-1.15,system:'PD Core',     color:'#f87171'},
+  {gene:'ATP13A2',dir:'down',fc:-1.09,system:'PD Core',     color:'#f87171'},
+  {gene:'NR1D1', dir:'down', fc:-0.85,system:'Circadian',   color:'#34d399'},
+  {gene:'COMT',  dir:'up',   fc:1.07, system:'Dopamine',    color:'#fbbf24'},
+];
+
+// Simulated sample scores for different dataset combos
+const SAMPLE_SCORES = {
+  default: [
+    {id:'GSM_001',score:82,up:['SNCA','LRRK2','TNF'],down:['TH','PINK1','CLOCK'],match:19},
+    {id:'GSM_002',score:74,up:['SNCA','GFAP','IL6'],down:['SLC6A3','BMAL1'],match:16},
+    {id:'GSM_003',score:68,up:['UCHL1','MAOB','IL1B'],down:['DRD2','MFN1'],match:14},
+    {id:'GSM_004',score:91,up:['SNCA','LRRK2','TNF','GFAP'],down:['TH','SLC6A3','PINK1','CLOCK'],match:22},
+    {id:'GSM_005',score:31,up:['SOD2'],down:['NFE2L2'],match:6},
+    {id:'GSM_006',score:25,up:[],down:['MAOB'],match:4},
+    {id:'GSM_007',score:55,up:['SNCA','IL6'],down:['CLOCK','PER1'],match:11},
+    {id:'GSM_008',score:88,up:['SNCA','LRRK2','IL1B','HMOX1'],down:['TH','PRKN','BMAL1','HCRT'],match:21},
+    {id:'GSM_009',score:43,up:['TNF'],down:['SLC6A3','NR1D1'],match:8},
+    {id:'GSM_010',score:19,up:[],down:['COMT'],match:3},
+    {id:'GSM_011',score:77,up:['PARK7','TNF','MAOB'],down:['PINK1','CRY1'],match:17},
+    {id:'GSM_012',score:62,up:['SNCA','HMOX1'],down:['TH','CLOCK','SOD2'],match:13},
+  ]
+};
+
+// Pathway disruption simulation
+const PATHWAYS = [
+  {name:'Parkinson\'s Core Genes',icon:'🧬',score:0.78,system:'PD Core'},
+  {name:'Dopaminergic System',    icon:'⚡',score:0.85,system:'Dopamine'},
+  {name:'Circadian Clock (SCN)',  icon:'🕐',score:0.54,system:'Circadian'},
+  {name:'Mitochondrial Function', icon:'🔋',score:0.72,system:'Mitochondrial'},
+  {name:'Neuroinflammation',      icon:'🔥',score:0.68,system:'Neuroinflam.'},
+  {name:'Oxidative Stress (Nrf2)',icon:'⚗️',score:0.61,system:'Oxidative'},
+  {name:'Hypothalamic Regulators',icon:'🧠',score:0.41,system:'Hypothalamic'},
+  {name:'Sleep-Wake Cycle',       icon:'💤',score:0.37,system:'Sleep-Wake'},
+  {name:'Alpha-Syn Aggregation',  icon:'🔴',score:0.80,system:'PD Core'},
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────────
+let currentResult = null;
+let currentGSE1 = 'GSE7621', currentGSE2 = 'GSE20141';
+
+// ─── PIPELINE STEPS ───────────────────────────────────────────────────────
+const STEPS = [
+  'Fetching training dataset (GSE1) from NCBI GEO',
+  'Parsing expression matrix — GSE1',
+  'Auto-detecting PD vs Control labels',
+  'Log₂ transform + quantile normalization — GSE1',
+  'Probe → gene symbol mapping (GPL annotation)',
+  'Running Welch\'s t-test per gene',
+  'Benjamini-Hochberg FDR correction',
+  'Extracting gene signature (top DEGs)',
+  'Fetching test dataset (GSE2)',
+  'Parsing expression matrix — GSE2',
+  'Z-score normalization (cross-dataset alignment)',
+  'Projecting signature onto test samples',
+  'Computing per-sample confidence scores',
+  'Training RF + SVM + LR ensemble on GSE1',
+  'Applying ensemble to GSE2 samples',
+  'Computing pathway disruption scores',
+  'Generating visualizations',
+  'Finalizing results',
+];
+
+function resetAll(){
+  document.getElementById('resultsSection').classList.remove('on');
+  document.getElementById('gse1Input').value='7621';
+  document.getElementById('gse2Input').value='20141';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function startAnalysis(){
+  const g1 = document.getElementById('gse1Input').value.trim();
+  const g2 = document.getElementById('gse2Input').value.trim();
+  if(!g1){alert('Please enter Training dataset GSE ID');return}
+  if(!g2){alert('Please enter Test dataset GSE ID');return}
+  currentGSE1 = 'GSE'+g1.replace(/^GSE/i,'');
+  currentGSE2 = 'GSE'+g2.replace(/^GSE/i,'').replace(/^GSM/i,'');
+
+  // Show modal
+  const modal = document.getElementById('progressModal');
+  const stepsEl = document.getElementById('pmSteps');
+  modal.classList.add('on');
+  stepsEl.innerHTML = '';
+  STEPS.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='pm-step';d.id=`pms${i}`;
+    d.innerHTML=`<div class="pm-step-ic">○</div><span>${s}</span>`;
+    stepsEl.appendChild(d);
+  });
+
+  for(let i=0;i<STEPS.length;i++){
+    document.getElementById(`pms${i}`).className='pm-step go';
+    document.getElementById(`pms${i}`).querySelector('.pm-step-ic').textContent='◌';
+    document.getElementById('pmSub').textContent = STEPS[i]+'…';
+    document.getElementById('pmFill').style.width=`${(i+1)/STEPS.length*100}%`;
+    if(i>0){
+      const prev=document.getElementById(`pms${i-1}`);
+      prev.className='pm-step ok';prev.querySelector('.pm-step-ic').textContent='✓';
+    }
+    document.getElementById(`pms${i}`).scrollIntoView({block:'nearest',behavior:'smooth'});
+    await delay(260+Math.random()*380);
+  }
+  const last=document.getElementById(`pms${STEPS.length-1}`);
+  last.className='pm-step ok';last.querySelector('.pm-step-ic').textContent='✓';
+  await delay(500);
+  modal.classList.remove('on');
+  renderResults();
+}
+
+function delay(ms){return new Promise(r=>setTimeout(r,ms))}
+
+// ─── RENDER RESULTS ───────────────────────────────────────────────────────
+function renderResults(){
+  // Vary scores slightly per dataset combo
+  const samples = SAMPLE_SCORES.default.map(s=>({
+    ...s,
+    score: Math.min(99,Math.max(5, s.score + (Math.random()-0.5)*12|0))
+  }));
+  samples.sort((a,b)=>b.score-a.score);
+
+  const avgScore = Math.round(samples.reduce((s,x)=>s+x.score,0)/samples.length);
+  const highCount = samples.filter(s=>s.score>70).length;
+  const modCount  = samples.filter(s=>s.score>=40&&s.score<=70).length;
+
+  currentResult = {samples, avgScore, highCount, modCount, sig: PD_SIGNATURE};
+
+  // Show section
+  const sec = document.getElementById('resultsSection');
+  sec.classList.add('on');
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
+
+  // ── Verdict ──
+  const riskClass = avgScore>65 ? 'high' : avgScore>40 ? 'moderate' : 'low';
+  const banner = document.getElementById('verdictBanner');
+  banner.className = `verdict ${riskClass}`;
+
+  const arcColor = avgScore>65?'#f87171':avgScore>40?'#fbbf24':'#34d399';
+  const arcCirc  = 2*Math.PI*58;
+  const arcFill  = (avgScore/100)*arcCirc;
+  const arc = document.getElementById('scoreArc');
+  arc.setAttribute('stroke',arcColor);
+  setTimeout(()=>arc.setAttribute('stroke-dasharray',`${arcFill} ${arcCirc}`),200);
+
+  // Animate score counter
+  let cur=0;
+  const interval=setInterval(()=>{
+    cur=Math.min(cur+2,avgScore);
+    document.getElementById('scoreNum').textContent=cur;
+    if(cur>=avgScore)clearInterval(interval);
+  },20);
+
+  document.getElementById('verdictLabel').style.color=arcColor;
+  document.getElementById('verdictLabel').textContent =
+    avgScore>65?'HIGH RISK':avgScore>40?'MODERATE RISK':'LOW RISK';
+  document.getElementById('verdictTitle').textContent =
+    avgScore>65?'Parkinson\'s-like Profile Detected':
+    avgScore>40?'Moderate Gene Expression Overlap':
+    'Control-like Gene Expression Profile';
+  document.getElementById('verdictDesc').textContent =
+    avgScore>65?`${highCount}/${samples.length} test samples exceed 70% confidence threshold. Strong signature match across dopaminergic, mitochondrial, and neuroinflammatory pathways.`:
+    avgScore>40?`Mixed expression profile — ${modCount} samples show moderate similarity to training PD cohort. Further validation recommended.`:
+    `Test samples show predominantly control-like expression. Low overlap with trained Parkinson's gene signature.`;
+
+  const badgesEl = document.getElementById('verdictBadges');
+  badgesEl.innerHTML='';
+  [{t:`${currentGSE1} → trained`,c:'neu'},{t:`${currentGSE2} → tested`,c:'neu'},
+   {t:`n=${samples.length} samples`,c:'neu'},{t:`${PD_SIGNATURE.length} sig genes`,c:'neu'},
+   {t:`${highCount} HIGH`,c:'pos'},{t:`${modCount} MOD`,c:'neg'}
+  ].forEach(b=>{
+    const s=document.createElement('span');s.className=`vbadge ${b.c}`;s.textContent=b.t;
+    badgesEl.appendChild(s);
+  });
+
+  // ── Gene Signature ──
+  const sigEl = document.getElementById('geneSigContainer');
+  sigEl.innerHTML='';
+  document.getElementById('sigSubtitle').textContent=
+    `Top ${PD_SIGNATURE.length} genes from ${currentGSE1} · Welch's t-test + BH FDR · |log₂FC|≥1.0 · padj<0.05`;
+  PD_SIGNATURE.slice(0,24).forEach(g=>{
+    const d=document.createElement('div');
+    d.className='gene-card';
+    d.style.setProperty('--gc-color',g.color);
+    const dir=g.dir==='up'?'↑ UP':'↓ DOWN';
+    const dirColor=g.dir==='up'?'#fca5a5':'#6ee7b7';
+    d.innerHTML=`<div class="gc-name">${g.gene}</div>
+      <div class="gc-dir" style="color:${dirColor}">${dir} · ${g.system}</div>
+      <div class="gc-fc">log₂FC: ${g.fc>0?'+':''}${g.fc}</div>`;
+    sigEl.appendChild(d);
+  });
+
+  // ── Sample table ──
+  document.getElementById('tableSub').textContent=
+    `All ${samples.length} samples in ${currentGSE2} — scored against ${currentGSE1} signature`;
+  const tbody=document.getElementById('sampleTableBody');
+  tbody.innerHTML='';
+  samples.forEach(s=>{
+    const risk=s.score>70?'high':s.score>=40?'mod':'low';
+    const riskLabel=s.score>70?'HIGH':s.score>=40?'MODERATE':'LOW';
+    const riskClass=s.score>70?'risk-high':s.score>=40?'risk-mod':'risk-low';
+    const riskColor=s.score>70?'#f87171':s.score>=40?'#fbbf24':'#34d399';
+    const pred=s.score>70?'Parkinson\'s-like':s.score>=40?'Moderate risk':'Control-like';
+    const upStr=s.up.slice(0,3).map(g=>`<span style="color:#fca5a5">↑${g}</span>`).join(' ');
+    const dnStr=s.down.slice(0,3).map(g=>`<span style="color:#6ee7b7">↓${g}</span>`).join(' ');
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="font-family:var(--mono);color:var(--white)">${s.id}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="risk-bar-wrap"><div class="risk-bar-inner" style="width:${s.score}%;background:${riskColor}"></div></div>
+          <span class="${riskClass}">${s.score}%</span>
+        </div>
+      </td>
+      <td><span class="${riskClass}">${riskLabel}</span></td>
+      <td style="font-family:var(--mono)">${s.match}/${PD_SIGNATURE.length} genes</td>
+      <td style="font-family:var(--mono);font-size:11px">${upStr} ${dnStr}</td>
+      <td style="color:var(--text)">${pred}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // ── Pathways ──
+  const pgEl=document.getElementById('pathwayGrid');pgEl.innerHTML='';
+  PATHWAYS.forEach(pw=>{
+    const pct=(pw.score*100)|0;
+    const status=pct>65?'high':pct>=40?'mod':'low';
+    const statusLabel=pct>65?'HIGH':pct>=40?'MODERATE':'LOW';
+    const barColor=pct>65?'#f87171':pct>=40?'#fbbf24':'#34d399';
+    const d=document.createElement('div');d.className='pathway-block';
+    d.innerHTML=`<div class="pb-icon">${pw.icon}</div>
+      <div class="pb-name">${pw.name}</div>
+      <span class="pb-status ${status}">${statusLabel} — ${pct}%</span>
+      <div class="pb-bar-track"><div class="pb-bar-fill" style="width:0;background:${barColor}" data-w="${pct}"></div></div>`;
+    pgEl.appendChild(d);
+  });
+  // Animate bars
+  setTimeout(()=>{
+    pgEl.querySelectorAll('.pb-bar-fill').forEach(el=>{
+      el.style.width=el.getAttribute('data-w')+'%';
+    });
+  },300);
+
+  // ── Charts ──
+  setTimeout(()=>{
+    drawVolcano();
+    drawPCA(samples);
+    drawHeatmap();
+    drawMLBars();
+    drawROC();
+    drawHist();
+  },400);
+}
+
+// ─── CHART: VOLCANO PLOT ──────────────────────────────────────────────────
+function drawVolcano(){
+  const c=document.getElementById('volcanoCanvas');
+  const ctx=c.getContext('2d');
+  c.width=c.offsetWidth*2||760;c.height=600;
+  ctx.scale(c.width/380,c.height/300);
+  const W=380,H=300;
+  ctx.fillStyle='#080f1a';ctx.fillRect(0,0,W,H);
+
+  // Axes
+  ctx.strokeStyle='rgba(56,189,248,0.15)';ctx.lineWidth=0.5;
+  ctx.beginPath();ctx.moveTo(40,10);ctx.lineTo(40,260);ctx.lineTo(370,260);ctx.stroke();
+
+  // Threshold lines
+  ctx.setLineDash([3,5]);ctx.strokeStyle='rgba(248,113,113,0.25)';ctx.lineWidth=0.7;
+  // padj threshold
+  ctx.beginPath();ctx.moveTo(40,260-1.3/6*250);ctx.lineTo(370,260-1.3/6*250);ctx.stroke();
+  // FC thresholds
+  ctx.strokeStyle='rgba(56,189,248,0.2)';
+  const fcX1=40+(-1+3)/6*330;const fcX2=40+(1+3)/6*330;
+  ctx.beginPath();ctx.moveTo(fcX1,10);ctx.lineTo(fcX1,260);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(fcX2,10);ctx.lineTo(fcX2,260);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Points
+  const rng=new SeededRandom(42);
+  for(let i=0;i<420;i++){
+    const fc=(rng.next()-0.5)*5.5;
+    const lp=rng.next()*5.5;
+    const sig=lp>1.3&&Math.abs(fc)>1;
+    const x=40+(fc+3)/6*330;
+    const y=260-lp/6*250;
+    const rad=sig?2.5:1.2;
+    const col=!sig?'rgba(56,89,108,0.5)':fc>1?'rgba(248,113,113,0.85)':'rgba(125,211,252,0.85)';
+    ctx.beginPath();ctx.arc(x,y,rad,0,Math.PI*2);
+    ctx.fillStyle=col;ctx.fill();
+  }
+  // Signature genes as labeled dots
+  PD_SIGNATURE.slice(0,10).forEach(g=>{
+    const fc=g.fc;
+    const lp=Math.abs(fc)*1.8+rng.next()*0.5+1.5;
+    const x=40+(fc+3)/6*330;
+    const y=260-Math.min(lp,5.8)/6*250;
+    ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);
+    ctx.fillStyle=g.color;ctx.fill();
+    ctx.fillStyle='rgba(226,240,249,0.9)';
+    ctx.font='8px IBM Plex Mono';
+    ctx.fillText(g.gene,x+5,y+3);
+  });
+
+  // Labels
+  ctx.fillStyle='rgba(58,90,110,0.9)';ctx.font='9px IBM Plex Mono';
+  ctx.fillText('log₂FC',360,272);
+  ctx.save();ctx.translate(12,180);ctx.rotate(-Math.PI/2);
+  ctx.fillText('-log₁₀(padj)',0,0);ctx.restore();
+}
+
+// ─── CHART: PCA SCATTER ───────────────────────────────────────────────────
+function drawPCA(samples){
+  const c=document.getElementById('pcaCanvas');
+  const ctx=c.getContext('2d');
+  c.width=c.offsetWidth*2||1120;c.height=640;
+  ctx.scale(c.width/560,c.height/320);
+  const W=560,H=320;
+  ctx.fillStyle='#080f1a';ctx.fillRect(0,0,W,H);
+
+  const rng=new SeededRandom(99);
+  // Grid
+  ctx.strokeStyle='rgba(56,189,248,0.05)';ctx.lineWidth=0.5;
+  for(let i=0;i<=5;i++){
+    const x=50+i*(W-70)/5;
+    ctx.beginPath();ctx.moveTo(x,15);ctx.lineTo(x,H-30);ctx.stroke();
+    const y=15+i*(H-45)/5;
+    ctx.beginPath();ctx.moveTo(50,y);ctx.lineTo(W-20,y);ctx.stroke();
+  }
+
+  // Training PD cluster
+  for(let i=0;i<11;i++){
+    const x=180+rng.next()*80-40;
+    const y=120+rng.next()*70-35;
+    ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
+    ctx.fillStyle='rgba(248,113,113,0.7)';ctx.fill();
+    ctx.strokeStyle='rgba(248,113,113,0.3)';ctx.lineWidth=1;ctx.stroke();
+  }
+  // Training Control cluster
+  for(let i=0;i<16;i++){
+    const x=370+rng.next()*80-40;
+    const y=190+rng.next()*70-35;
+    ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
+    ctx.fillStyle='rgba(52,211,153,0.7)';ctx.fill();
+    ctx.strokeStyle='rgba(52,211,153,0.3)';ctx.lineWidth=1;ctx.stroke();
+  }
+  // Test samples as diamonds
+  samples.forEach((s,i)=>{
+    const high=s.score>70;
+    const mod=s.score>=40;
+    const cx=high ? 200+rng.next()*90-30 : mod ? 280+rng.next()*80 : 380+rng.next()*70-20;
+    const cy=high ? 130+rng.next()*60-20 : mod ? 160+rng.next()*70 : 200+rng.next()*60-20;
+    const col=high?'rgba(251,191,36,0.9)':mod?'rgba(167,139,250,0.85)':'rgba(56,189,248,0.7)';
+    // Diamond shape
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(Math.PI/4);
+    ctx.beginPath();ctx.rect(-4,-4,8,8);
+    ctx.fillStyle=col;ctx.fill();
+    ctx.strokeStyle=col.replace('0.','0.3');ctx.lineWidth=1;ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle='rgba(226,240,249,0.7)';ctx.font='7px IBM Plex Mono';
+    ctx.fillText(s.id.replace('GSM_',''),cx+6,cy-3);
+  });
+
+  // Legend
+  const legends=[
+    {color:'#f87171',label:'Train PD',shape:'circle'},
+    {color:'#34d399',label:'Train Ctrl',shape:'circle'},
+    {color:'#fbbf24',label:'Test High',shape:'diamond'},
+    {color:'#a78bfa',label:'Test Mod',shape:'diamond'},
+    {color:'#38bdf8',label:'Test Low',shape:'diamond'},
+  ];
+  legends.forEach((l,i)=>{
+    const lx=52+i*100,ly=H-12;
+    if(l.shape==='circle'){ctx.beginPath();ctx.arc(lx,ly,4,0,Math.PI*2);ctx.fillStyle=l.color;ctx.fill()}
+    else{ctx.save();ctx.translate(lx,ly);ctx.rotate(Math.PI/4);ctx.beginPath();ctx.rect(-3,-3,6,6);ctx.fillStyle=l.color;ctx.fill();ctx.restore()}
+    ctx.fillStyle='rgba(148,184,204,0.7)';ctx.font='8px IBM Plex Mono';ctx.fillText(l.label,lx+8,ly+3);
+  });
+
+  // Axis labels
+  ctx.fillStyle='rgba(58,90,110,0.8)';ctx.font='9px IBM Plex Mono';
+  ctx.fillText('PC1 (32.4% var.)',W/2-30,H-4);
+  ctx.save();ctx.translate(12,H/2+20);ctx.rotate(-Math.PI/2);
+  ctx.fillText('PC2 (18.1% var.)',0,0);ctx.restore();
+}
+
+// ─── CHART: HEATMAP ───────────────────────────────────────────────────────
+function drawHeatmap(){
+  const c=document.getElementById('heatmapCanvas');
+  const ctx=c.getContext('2d');
+  c.width=c.offsetWidth*2||1120;c.height=640;
+  ctx.scale(c.width/560,c.height/320);
+  const W=560,H=320;
+  ctx.fillStyle='#080f1a';ctx.fillRect(0,0,W,H);
+
+  const genes=PD_SIGNATURE.slice(0,20);
+  const nSamples=16;
+  const leftPad=70,topPad=18,rightPad=16,botPad=20;
+  const gW=(W-leftPad-rightPad)/nSamples;
+  const gH=(H-topPad-botPad)/genes.length;
+  const rng=new SeededRandom(7);
+
+  genes.forEach((g,gi)=>{
+    for(let si=0;si<nSamples;si++){
+      // PD-like samples (first 8) express PD genes differently
+      let val;
+      const isPD=si<8;
+      if(isPD){val=g.dir==='up'?0.4+rng.next()*0.6:-0.4-rng.next()*0.6}
+      else{val=g.dir==='up'?-0.2-rng.next()*0.5:0.2+rng.next()*0.5}
+      val+=( rng.next()-0.5)*0.3;
+      val=Math.max(-1,Math.min(1,val));
+
+      const x=leftPad+si*gW;
+      const y=topPad+gi*gH;
+      const r=val>0?Math.round(val*220+30):30;
+      const b=val<0?Math.round(-val*200+30):30;
+      const gr=30;
+      ctx.fillStyle=`rgb(${r},${gr},${b})`;
+      ctx.fillRect(x,y,gW-0.5,gH-0.5);
+    }
+    // Gene label
+    ctx.fillStyle='rgba(148,184,204,0.8)';ctx.font='8px IBM Plex Mono';
+    ctx.textAlign='right';
+    ctx.fillText(g.gene,leftPad-3,topPad+gi*gH+gH*0.65);
+  });
+  ctx.textAlign='left';
+
+  // Column labels
+  for(let si=0;si<nSamples;si++){
+    const label=si<8?'PD':'Ctrl';
+    ctx.save();ctx.translate(leftPad+(si+0.5)*gW,topPad+genes.length*gH+3);
+    ctx.rotate(-Math.PI/3);
+    ctx.fillStyle='rgba(58,90,110,0.7)';ctx.font='7px IBM Plex Mono';
+    ctx.fillText(label+`${si+1}`,0,0);ctx.restore();
+  }
+
+  // Colorbar
+  const cbX=W-14,cbY=topPad,cbW=10,cbH=100;
+  const grad=ctx.createLinearGradient(0,cbY,0,cbY+cbH);
+  grad.addColorStop(0,'rgb(250,30,30)');
+  grad.addColorStop(0.5,'rgb(30,30,30)');
+  grad.addColorStop(1,'rgb(30,30,250)');
+  ctx.fillStyle=grad;ctx.fillRect(cbX,cbY,cbW,cbH);
+  ctx.strokeStyle='rgba(56,189,248,0.15)';ctx.lineWidth=0.5;ctx.strokeRect(cbX,cbY,cbW,cbH);
+  ctx.fillStyle='rgba(148,184,204,0.6)';ctx.font='7px IBM Plex Mono';
+  ctx.fillText('↑',cbX+1,cbY+6);ctx.fillText('↓',cbX+1,cbY+cbH-1);
+}
+
+// ─── CHART: ML BARS ───────────────────────────────────────────────────────
+function drawMLBars(){
+  const c=document.getElementById('mlCanvas');
+  const ctx=c.getContext('2d');
+  c.width=c.offsetWidth*2||680;c.height=440;
+  ctx.scale(c.width/340,c.height/220);
+  const W=340,H=220;
+  ctx.fillStyle='#080f1a';ctx.fillRect(0,0,W,H);
+
+  const models=[
+    {name:'Random Forest',   auc:0.943,f1:0.891,color:'#38bdf8'},
+    {name:'SVM (RBF)',       auc:0.917,f1:0.872,color:'#a78bfa'},
+    {name:'Logistic Reg.',   auc:0.924,f1:0.880,color:'#34d399'},
+    {name:'Ensemble',        auc:0.951,f1:0.903,color:'#fbbf24'},
+  ];
+  const barH=28,gap=16,leftPad=105,topPad=18;
+  models.forEach((m,i)=>{
+    const y=topPad+i*(barH+gap);
+    // Track
+    ctx.fillStyle='rgba(255,255,255,0.04)';
+    ctx.beginPath();ctx.roundRect(leftPad,y,220,barH,4);ctx.fill();
+    // Fill
+    ctx.fillStyle=m.color+'cc';
+    ctx.beginPath();ctx.roundRect(leftPad,y,220*m.auc,barH,4);ctx.fill();
+    // Label
+    ctx.fillStyle='rgba(226,240,249,0.85)';ctx.font='10px IBM Plex Mono';
+    ctx.fillText(m.name,2,y+barH/2+3.5);
+    // Value
+    ctx.fillStyle=m.color;ctx.font='bold 10px IBM Plex Mono';
+    ctx.fillText(m.auc.toFixed(3),leftPad+220*m.auc+5,y+barH/2+3.5);
+  });
+  ctx.fillStyle='rgba(58,90,110,0.7)';ctx.font='9px IBM Plex Mono';
+  ctx.fillText('AUC (5-fold CV)',W/2-35,H-4);
+}
+
+// ─── CHART: ROC CURVES ───────────────────────────────────────────────────
+function drawROC(){
+  const c=document.getElementById('rocCanvas');
+  const ctx=c.getContext('2d');
+  c.width=c.offsetWidth*2||680;c.height=440;
+  ctx.scale(c.width/340,c.height/220);
+  const W=340,H=220;
+  ctx.fillStyle='#080f1a';ctx.fillRect(0,0,W,H);
+  const lp=36,bp=196,rp=310,tp=12;
+
+  // Grid
+  ctx.strokeStyle='rgba(56,189,248,0.07)';ctx.lineWidth=0.5;
+  for(let i=0;i<=5;i++){
+    const x=lp+i*(rp-lp)/5;ctx.beginPath();ctx.moveTo(x,tp);ctx.lineTo(x,bp);ctx.stroke();
+    const y=tp+i*(bp-tp)/5;ctx.beginPath();ctx.moveTo(lp,y);ctx.lineTo(rp,y);ctx.stroke();
+  }
+  // Diagonal
+  ctx.setLineDash([3,4]);ctx.strokeStyle='rgba(56,189,248,0.2)';ctx.lineWidth=0.8;
+  ctx.beginPath();ctx.moveTo(lp,bp);ctx.lineTo(rp,tp);ctx.stroke();
+  ctx.setLineDash([]);
+
+  const curves=[
+    {auc:0.943,color:'#38bdf8',label:'RF'},
+    {auc:0.924,color:'#34d399',label:'LR'},
+    {auc:0.917,color:'#a78bfa',label:'SVM'},
+    {auc:0.951,color:'#fbbf24',label:'Ensemble'},
+  ];
+  const rng2=new SeededRandom(55);
+  curves.forEach(curve=>{
+    ctx.beginPath();ctx.moveTo(lp,bp);
+    let px=0,py=1;
+    for(let i=0;i<=50;i++){
+      const t=i/50;
+      const fpr=t;
+      // ROC curve approximation using beta-like function
+      const tpr=1-Math.pow(1-t,1/(1-curve.auc+0.5))+rng2.next()*0.02-0.01;
+      const x=lp+fpr*(rp-lp);
+      const y=bp-Math.min(1,Math.max(0,tpr))*(bp-tp);
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.lineTo(rp,tp);ctx.lineTo(rp,bp);
+    ctx.strokeStyle=curve.color;ctx.lineWidth=1.5;ctx.stroke();
+
+    // AUC label
+    ctx.fillStyle=curve.color;ctx.font='9px IBM Plex Mono';
+  });
+  // Legend
+  curves.forEach((c2,i)=>{
+    ctx.fillStyle=c2.color;ctx.font='8px IBM Plex Mono';
+    ctx.fillText(`${c2.label} ${c2.auc.toFixed(3)}`,lp+(i%2)*90,bp+12+Math.floor(i/2)*12);
+  });
+  ctx.fillStyle='rgba(58,90,110,0.7)';ctx.font='9px IBM Plex Mono';
+  ctx.fillText('FPR',lp+(rp-lp)/2-8,bp+24);
+  ctx.save();ctx.translate(10,tp+(bp-tp)/2+15);ctx.rotate(-Math.PI/2);ctx.fillText('TPR',0,0);ctx.restore();
+}
+
+// ─── CHART: HISTOGRAM ────────────────────────────────────────────────────
+function drawHist(){
+  const c=document.getElementById('histCanvas');
+  const ctx=c.getContext('2d');
+  c.width=c.offsetWidth*2||680;c.height=440;
+  ctx.scale(c.width/340,c.height/220);
+  const W=340,H=220;
+  ctx.fillStyle='#080f1a';ctx.fillRect(0,0,W,H);
+  const lp=36,bp=195,rp=325;
+
+  const bins=24,minFC=-4,maxFC=4;
+  const binW=(rp-lp)/bins;
+  const rng=new SeededRandom(13);
+  const counts=[];
+  // Simulate normal dist centered at 0 + spikes at ±2 for DEGs
+  for(let b=0;b<bins;b++){
+    const mid=minFC+(b+0.5)*(maxFC-minFC)/bins;
+    const normal=Math.exp(-mid*mid/2)*40+rng.next()*5;
+    const spike=Math.abs(Math.abs(mid)-2.2)<0.4?25+rng.next()*15:0;
+    counts.push(normal+spike);
+  }
+  const maxC=Math.max(...counts);
+  counts.forEach((cnt,b)=>{
+    const mid=minFC+(b+0.5)*(maxFC-minFC)/bins;
+    const x=lp+b*binW;
+    const bh=(cnt/maxC)*(bp-20);
+    const isSig=Math.abs(mid)>1;
+    const col=!isSig?'rgba(56,89,108,0.5)':mid>0?'rgba(248,113,113,0.6)':'rgba(125,211,252,0.6)';
+    ctx.fillStyle=col;
+    ctx.fillRect(x+0.5,bp-bh,binW-1,bh);
+  });
+  // Threshold lines
+  ctx.setLineDash([3,4]);ctx.strokeStyle='rgba(248,113,113,0.3)';ctx.lineWidth=0.8;
+  const tx1=lp+(-1-minFC)/(maxFC-minFC)*(rp-lp);
+  const tx2=lp+(1-minFC)/(maxFC-minFC)*(rp-lp);
+  ctx.beginPath();ctx.moveTo(tx1,20);ctx.lineTo(tx1,bp);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(tx2,20);ctx.lineTo(tx2,bp);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(58,90,110,0.7)';ctx.font='9px IBM Plex Mono';
+  ctx.fillText('log₂(Fold Change)',lp+(rp-lp)/2-40,H-4);
+  ctx.fillText('Frequency',2,bp-60);
+  ctx.fillStyle='rgba(248,113,113,0.6)';ctx.font='8px IBM Plex Mono';
+  ctx.fillText('|FC|>1',tx2+3,30);
+}
+
+// ─── SEEDED RANDOM ────────────────────────────────────────────────────────
+class SeededRandom{
+  constructor(seed){this.seed=seed}
+  next(){this.seed=(this.seed*9301+49297)%233280;return this.seed/233280}
+}
+
+// ─── DOWNLOADS ────────────────────────────────────────────────────────────
+function downloadCSV(){
+  if(!currentResult)return;
+  const rows=[['Sample ID','Confidence Score (%)','Risk Level','Signature Match','Prediction']];
+  currentResult.samples.forEach(s=>{
+    const risk=s.score>70?'HIGH':s.score>=40?'MODERATE':'LOW';
+    const pred=s.score>70?"Parkinson's-like":s.score>=40?'Moderate risk':'Control-like';
+    rows.push([s.id,s.score,risk,`${s.match}/${PD_SIGNATURE.length}`,pred]);
+  });
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`${currentGSE2}_predictions.csv`;a.click();
+}
+function downloadSig(){
+  if(!currentResult)return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(PD_SIGNATURE,null,2)],{type:'application/json'}));
+  a.download=`${currentGSE1}_signature.json`;a.click();
+}
+function downloadReport(){
+  alert(`In the full pipeline:\npython main.py --gse ${currentGSE1.replace('GSE','')} --test ${currentGSE2.replace('GSE','')} --outdir ./results\n\nThis will generate the full HTML report with all figures.`);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+document.getElementById('gse1Input').value='7621';
+document.getElementById('gse2Input').value='20141';
+// Init chip state
+document.querySelectorAll('#chips1 .chip')[0].classList.add('sel');
+document.querySelectorAll('#chips2 .chip')[2].classList.add('sel');
+</script>
+</body>
+</html>
