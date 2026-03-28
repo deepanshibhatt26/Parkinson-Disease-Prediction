@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuraScan — Parkinson's Early Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #050b12;
+    --surface:  #0b1623;
+    --surface2: #0f1e2e;
+    --border:   rgba(0,200,180,0.15);
+    --accent:   #00c8b4;
+    --accent2:  #6af0d0;
+    --warn:     #ff6b6b;
+    --warn2:    #ffb347;
+    --text:     #c8dde8;
+    --muted:    #4a6a7a;
+    --white:    #e8f4f8;
+    --mono:     'Space Mono', monospace;
+    --sans:     'DM Sans', sans-serif;
+    --glow:     0 0 30px rgba(0,200,180,0.25);
+    --glow-sm:  0 0 12px rgba(0,200,180,0.2);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND GRID ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,200,180,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,180,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  .wrapper { position: relative; z-index: 1; }
+
+  /* ── NAV ── */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 48px;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    background: rgba(5,11,18,0.8);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .nav-logo {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--mono); font-size: 15px; font-weight: 700;
+    color: var(--accent); letter-spacing: 0.08em;
+    text-decoration: none;
+  }
+
+  .logo-mark {
+    width: 32px; height: 32px;
+    border: 1.5px solid var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    color: var(--accent);
+    box-shadow: var(--glow-sm);
+    animation: pulse-logo 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-logo {
+    0%,100% { box-shadow: 0 0 8px rgba(0,200,180,0.2); }
+    50%      { box-shadow: 0 0 20px rgba(0,200,180,0.5); }
+  }
+
+  .nav-links {
+    display: flex; gap: 32px; list-style: none;
+  }
+  .nav-links a {
+    font-size: 13px; color: var(--muted); text-decoration: none;
+    font-family: var(--mono); letter-spacing: 0.05em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  .nav-badge {
+    background: rgba(0,200,180,0.1);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: var(--mono); font-size: 11px;
+    padding: 5px 12px; border-radius: 4px;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 100px 48px 80px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .hero-tag {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--accent); letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .hero-tag::before {
+    content: ''; display: block;
+    width: 24px; height: 1px; background: var(--accent);
+  }
+
+  h1 {
+    font-family: var(--mono); font-size: clamp(32px, 4vw, 52px);
+    font-weight: 700; line-height: 1.15;
+    color: var(--white);
+    margin-bottom: 24px;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span {
+    color: var(--accent);
+    text-shadow: 0 0 30px rgba(0,200,180,0.4);
+  }
+
+  .hero-desc {
+    font-size: 16px; line-height: 1.7;
+    color: var(--text); font-weight: 300;
+    margin-bottom: 36px;
+    max-width: 480px;
+  }
+
+  .hero-stats {
+    display: flex; gap: 32px; flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  .stat-num {
+    font-family: var(--mono); font-size: 22px;
+    font-weight: 700; color: var(--accent2);
+  }
+
+  .stat-label {
+    font-size: 12px; color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── PIPELINE VISUAL (hero right) ── */
+  .pipeline-visual {
+    position: relative;
+  }
+
+  .pipeline-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    font-family: var(--mono);
+    font-size: 12px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  }
+
+  .pipeline-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .pipeline-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pipeline-title {
+    font-size: 11px; color: var(--muted); letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  .pipeline-steps {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  .p-step {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: all 0.3s;
+    color: var(--muted);
+  }
+
+  .p-step.active {
+    background: rgba(0,200,180,0.06);
+    border-color: var(--border);
+    color: var(--accent2);
+  }
+
+  .step-num {
+    font-size: 10px; color: var(--muted); width: 16px;
+  }
+
+  .step-name { font-size: 12px; }
+
+  .step-icon {
+    margin-left: auto;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(0,200,180,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+  }
+
+  .p-step.active .step-icon {
+    background: rgba(0,200,180,0.25);
+    box-shadow: 0 0 8px rgba(0,200,180,0.3);
+  }
+
+  /* ── DIVIDER ── */
+  .section-divider {
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 48px;
+    margin: 20px 0;
+    max-width: 1200px;
+    margin-left: auto; margin-right: auto;
+  }
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider-label {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* ── INPUT SECTION ── */
+  .input-section {
+    max-width: 1200px; margin: 0 auto;
+    padding: 40px 48px 80px;
+  }
+
+  .input-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+  }
+
+  .panel-header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px;
+    background: var(--surface2);
+  }
+
+  .panel-dots {
+    display: flex; gap: 6px;
+  }
+  .panel-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .panel-dot:nth-child(1) { background: #ff5f56; }
+  .panel-dot:nth-child(2) { background: #ffbd2e; }
+  .panel-dot:nth-child(3) { background: #27c93f; }
+
+  .panel-title {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--muted); letter-spacing: 0.08em;
+  }
+
+  .panel-body { padding: 40px 32px; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+
+  .field-group {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .field-group.span2 {
+    grid-column: span 2;
+  }
+
+  label {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .gse-input-wrap {
+    position: relative;
+  }
+
+  .gse-prefix {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    font-family: var(--mono); font-size: 13px;
+    color: var(--accent); font-weight: 700;
+    pointer-events: none;
+  }
+
+  input[type="text"], input[type="number"], select {
+    width: 100%; padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--white);
+    font-family: var(--mono); font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+  }
+
+  .gse-input { padding-left: 52px; }
+
+  input[type="text"]:focus, input[type="number"]:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,200,180,0.1), var(--glow-sm);
+  }
+
+  input::placeholder { color: var(--muted); }
+
+  select option { background: var(--surface2); }
+
+  .select-wrap {
+    position: relative;
+  }
+  .select-wrap::after {
+    content: '▾';
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); pointer-events: none; font-size: 12px;
+  }
+
+  /* Quick presets */
+  .presets {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .presets-label {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); letter-spacing: 0.08em;
+    text-transform: uppercase; margin-right: 4px;
+    white-space: nowrap;
+  }
+
+  .preset-btn {
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text); font-family: var(--mono); font-size: 11px;
+    cursor: pointer; transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .preset-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,200,180,0.06);
+  }
+
+  .preset-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,200,180,0.08);
+  }
+
+  /* Advanced toggles */
+  .advanced-toggle {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 12px;
+    color: var(--muted); cursor: pointer;
+    margin-bottom: 20px;
+    width: fit-content;
+    user-select: none;
+  }
+
+  .advanced-toggle:hover { color: var(--accent); }
+
+  .toggle-arrow {
+    transition: transform 0.3s;
+    display: inline-block;
+    font-size: 10px;
+  }
+
+  .toggle-arrow.open { transform: rotate(90deg); }
+
+  .advanced-options {
+    display: none;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding: 20px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    animation: slideDown 0.3s ease;
+  }
+
+  .advanced-options.visible { display: grid; }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Submit */
+  .submit-row {
+    display: flex; align-items: center; gap: 16px;
+  }
+
+  .btn-primary {
+    padding: 16px 40px;
+    background: var(--accent);
+    color: #050b12;
+    border: none; border-radius: 10px;
+    font-family: var(--mono); font-size: 13px;
+    font-weight: 700; letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 10px;
+    text-transform: uppercase;
+  }
+
+  .btn-primary:hover {
+    background: var(--accent2);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px rgba(0,200,180,0.3);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-primary:disabled {
+    opacity: 0.5; cursor: not-allowed; transform: none;
+  }
+
+  .btn-secondary {
+    padding: 16px 24px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: var(--mono); font-size: 13px;
+    cursor: pointer; transition: all 0.2s;
+    letter-spacing: 0.06em;
+  }
+
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  .run-note {
+    font-size: 12px; color: var(--muted);
+    font-style: italic;
+    margin-left: auto;
+  }
+
+  /* ── OUTPUT SECTION ── */
+  .output-section {
+    max-width: 1200px; margin: 0 auto;
+    padding: 0 48px 80px;
+    display: none;
+  }
+
+  .output-section.visible { display: block; }
+
+  /* Terminal output */
+  .terminal {
+    background: #020810;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+
+  .terminal-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 20px;
+    background: rgba(0,0,0,0.4);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-title {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    margin-left: 8px; letter-spacing: 0.06em;
+  }
+
+  .terminal-body {
+    padding: 24px; font-family: var(--mono); font-size: 12px;
+    line-height: 1.8; max-height: 300px; overflow-y: auto;
+    color: #7aeccd;
+  }
+
+  .terminal-body::-webkit-scrollbar { width: 4px; }
+  .terminal-body::-webkit-scrollbar-track { background: transparent; }
+  .terminal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .log-line { display: flex; gap: 10px; }
+  .log-time { color: var(--muted); flex-shrink: 0; }
+  .log-level-info { color: var(--accent); }
+  .log-level-warn { color: var(--warn2); }
+  .log-level-success { color: #6af090; }
+  .cursor {
+    display: inline-block; width: 8px; height: 14px;
+    background: var(--accent); margin-left: 2px;
+    animation: blink 1s step-end infinite;
+    vertical-align: bottom;
+  }
+
+  /* ── RESULTS GRID ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 20px;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .result-card.visible {
+    opacity: 1; transform: translateY(0);
+  }
+
+  .result-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--grad, linear-gradient(90deg, var(--accent), var(--accent2)));
+  }
+
+  .result-card.warn { --grad: linear-gradient(90deg, #ff6b6b, #ffb347); }
+  .result-card.good { --grad: linear-gradient(90deg, #6af090, #00c8b4); }
+  .result-card.info { --grad: linear-gradient(90deg, #6aacf0, #00c8b4); }
+  .result-card.purple { --grad: linear-gradient(90deg, #c96af0, #6af0d0); }
+
+  .rc-label {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--muted); letter-spacing: 0.12em;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+
+  .rc-value {
+    font-family: var(--mono); font-size: 28px; font-weight: 700;
+    color: var(--white); line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .rc-sub {
+    font-size: 12px; color: var(--muted);
+  }
+
+  /* ── CHARTS SECTION ── */
+  .charts-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    opacity: 0; transform: translateY(20px);
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .chart-card.visible { opacity: 1; transform: translateY(0); }
+
+  .chart-card.full { grid-column: span 2; }
+
+  .chart-title {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--muted); letter-spacing: 0.1em;
+    text-transform: uppercase; margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* ML Metrics Bar */
+  .ml-bars { display: flex; flex-direction: column; gap: 14px; }
+
+  .ml-bar-row {
+    display: grid; grid-template-columns: 160px 1fr 60px;
+    align-items: center; gap: 14px;
+  }
+
+  .ml-model-name {
+    font-family: var(--mono); font-size: 11px; color: var(--text);
+  }
+
+  .bar-track {
+    height: 6px; background: rgba(255,255,255,0.05);
+    border-radius: 3px; overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0;
+    transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 8px rgba(0,200,180,0.4);
+  }
+
+  .bar-val {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--accent); text-align: right;
+  }
+
+  /* Disruption radar / system bars */
+  .system-bars { display: flex; flex-direction: column; gap: 12px; }
+
+  .sys-bar-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 48px;
+    align-items: center; gap: 12px;
+  }
+
+  .sys-name {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text); letter-spacing: 0.03em;
+  }
+
+  .sys-bar-fill {
+    height: 8px; border-radius: 4px; width: 0;
+    transition: width 1.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .sys-val {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); text-align: right;
+  }
+
+  /* Gene table */
+  .gene-table-wrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    font-family: var(--mono); font-size: 12px;
+  }
+
+  thead { background: var(--surface2); }
+
+  th {
+    padding: 12px 16px; text-align: left;
+    color: var(--muted); letter-spacing: 0.08em;
+    font-size: 10px; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(0,200,180,0.05);
+    color: var(--text);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  tr:hover td { background: rgba(0,200,180,0.03); }
+
+  .reg-badge {
+    display: inline-block;
+    padding: 2px 10px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  }
+
+  .reg-up   { background: rgba(255,107,107,0.12); color: #ff8f8f; }
+  .reg-down { background: rgba(106,240,208,0.1);  color: #6af0d0; }
+
+  /* Causal Chains */
+  .chains { display: flex; flex-direction: column; gap: 16px; }
+
+  .chain-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--chain-color, var(--accent));
+    border-radius: 0 12px 12px 0;
+    padding: 20px;
+  }
+
+  .chain-title {
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    color: var(--white); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .chain-fraction {
+    font-size: 11px; color: var(--chain-color, var(--accent));
+    background: rgba(0,200,180,0.08);
+    padding: 2px 8px; border-radius: 4px;
+  }
+
+  .chain-detail {
+    font-size: 13px; color: var(--text); line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  .chain-genes {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;
+  }
+
+  .gene-tag {
+    font-family: var(--mono); font-size: 11px;
+    padding: 3px 10px; border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--accent2);
+  }
+
+  .gene-tag.up   { border-color: rgba(255,107,107,0.3); color: #ff9090; }
+  .gene-tag.down { border-color: rgba(106,240,208,0.3); color: #6af0d0; }
+
+  /* Symptoms */
+  .symptoms {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+  }
+
+  .symptom-tag {
+    font-size: 11px; padding: 3px 10px;
+    background: rgba(255,179,71,0.1);
+    border: 1px solid rgba(255,179,71,0.25);
+    color: var(--warn2); border-radius: 4px;
+  }
+
+  /* Progress overlay */
+  .progress-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(5,11,18,0.92);
+    backdrop-filter: blur(8px);
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 32px;
+  }
+
+  .progress-overlay.active { display: flex; }
+
+  .progress-inner { text-align: center; }
+
+  .progress-title {
+    font-family: var(--mono); font-size: 14px;
+    color: var(--accent); letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .progress-subtitle {
+    font-size: 13px; color: var(--muted); margin-bottom: 32px;
+  }
+
+  .progress-bar-wrap {
+    width: 400px; height: 3px;
+    background: rgba(0,200,180,0.1);
+    border-radius: 2px; overflow: hidden;
+    margin: 0 auto 20px;
+  }
+
+  .progress-bar-fill {
+    height: 100%; width: 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .progress-steps {
+    display: flex; flex-direction: column; gap: 10px;
+    width: 400px;
+  }
+
+  .prog-step {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--mono); font-size: 12px;
+    color: var(--muted);
+    transition: color 0.3s;
+  }
+
+  .prog-step.active { color: var(--accent); }
+  .prog-step.done   { color: #6af090; }
+
+  .prog-step-icon {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1px solid var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .prog-step.active .prog-step-icon {
+    border-color: var(--accent); color: var(--accent);
+    box-shadow: 0 0 8px rgba(0,200,180,0.3);
+    animation: spin 2s linear infinite;
+  }
+
+  .prog-step.done .prog-step-icon {
+    border-color: #6af090; color: #6af090; background: rgba(106,240,144,0.1);
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 48px;
+    display: flex; justify-content: space-between; align-items: center;
+    max-width: 1200px; margin: 0 auto;
+  }
+
+  .footer-left {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+  }
+
+  .footer-note {
+    font-size: 11px; color: var(--muted);
+    max-width: 480px; text-align: right; line-height: 1.5;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how-section {
+    max-width: 1200px; margin: 0 auto;
+    padding: 40px 48px 60px;
+  }
+
+  .steps-row {
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    gap: 0; position: relative;
+    margin-top: 40px;
+  }
+
+  .steps-row::before {
+    content: '';
+    position: absolute; top: 28px; left: 28px; right: 28px;
+    height: 1px; background: linear-gradient(90deg, var(--accent), transparent);
+    z-index: 0;
+  }
+
+  .step-item {
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; gap: 12px;
+    padding: 0 8px; position: relative; z-index: 1;
+  }
+
+  .step-circle {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 18px;
+    color: var(--accent);
+    transition: all 0.3s;
+  }
+
+  .step-item:hover .step-circle {
+    border-color: var(--accent);
+    box-shadow: var(--glow-sm);
+  }
+
+  .step-item-label {
+    font-size: 11px; color: var(--muted);
+    line-height: 1.4; letter-spacing: 0.02em;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    nav { padding: 16px 20px; }
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; padding: 60px 20px; }
+    .pipeline-visual { display: none; }
+    .input-section, .output-section, .how-section { padding-left: 20px; padding-right: 20px; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .results-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-section { grid-template-columns: 1fr; }
+    .chart-card.full { grid-column: span 1; }
+    .steps-row { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .steps-row::before { display: none; }
+    .advanced-options { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="logo-mark">NS</div>
+    NEURASCAN
+  </a>
+  <ul class="nav-links">
+    <li><a href="#analyze">Analyze</a></li>
+    <li><a href="#how">Pipeline</a></li>
+    <li><a href="https://www.ncbi.nlm.nih.gov/geo/" target="_blank">GEO Database ↗</a></li>
+  </ul>
+  <div class="nav-badge">Research Tool v2.0</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-tag">Microarray Gene Expression Analysis</div>
+    <h1>Early <span>Parkinson's</span><br>Detection Pipeline</h1>
+    <p class="hero-desc">
+      Submit a GEO accession ID and get a complete bioinformatics analysis —
+      differential expression, hypothalamic disruption scoring, and ML-based
+      classification with SHAP explainability.
+    </p>
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-num">8</span>
+        <span class="stat-label">Gene banks</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">3+1</span>
+        <span class="stat-label">ML models</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">12</span>
+        <span class="stat-label">Visualizations</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">GPL570</span>
+        <span class="stat-label">Supported platforms</span>
+      </div>
+    </div>
+  </div>
+  <div class="pipeline-visual">
+    <div class="pipeline-card">
+      <div class="pipeline-header">
+        <span class="pipeline-title">PIPELINE STATUS</span>
+        <div class="status-dot"></div>
+      </div>
+      <div class="pipeline-steps">
+        <div class="p-step active">
+          <span class="step-num">01</span>
+          <span class="step-name">GEO Data Acquisition</span>
+          <div class="step-icon">⬇</div>
+        </div>
+        <div class="p-step active">
+          <span class="step-num">02</span>
+          <span class="step-name">Preprocessing + QC</span>
+          <div class="step-icon">⚙</div>
+        </div>
+        <div class="p-step active">
+          <span class="step-num">03</span>
+          <span class="step-name">Differential Expression</span>
+          <div class="step-icon">∑</div>
+        </div>
+        <div class="p-step active">
+          <span class="step-num">04</span>
+          <span class="step-name">Biological Interpretation</span>
+          <div class="step-icon">🧬</div>
+        </div>
+        <div class="p-step active">
+          <span class="step-num">05</span>
+          <span class="step-name">ML Ensemble + SHAP</span>
+          <div class="step-icon">◈</div>
+        </div>
+        <div class="p-step active">
+          <span class="step-num">06</span>
+          <span class="step-name">Report Generation</span>
+          <div class="step-icon">◻</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DIVIDER -->
+<div class="section-divider">
+  <div class="divider-line"></div>
+  <span class="divider-label" id="analyze">Analysis Parameters</span>
+  <div class="divider-line"></div>
+</div>
+
+<!-- INPUT SECTION -->
+<section class="input-section">
+  <div class="input-panel">
+    <div class="panel-header">
+      <div class="panel-dots">
+        <div class="panel-dot"></div>
+        <div class="panel-dot"></div>
+        <div class="panel-dot"></div>
+      </div>
+      <span class="panel-title">neurascan — configure analysis run</span>
+    </div>
+    <div class="panel-body">
+
+      <!-- Presets -->
+      <div class="presets">
+        <span class="presets-label">Quick load:</span>
+        <button class="preset-btn" onclick="loadPreset('GSE7621','Substantia nigra, GPL96')">GSE7621</button>
+        <button class="preset-btn" onclick="loadPreset('GSE99039','Substantia nigra, GPL570')">GSE99039</button>
+        <button class="preset-btn" onclick="loadPreset('GSE20141','PD brain, GPL96')">GSE20141</button>
+        <button class="preset-btn" onclick="loadPreset('GSE20333','Whole blood, GPL6102')">GSE20333</button>
+        <button class="preset-btn" onclick="loadPreset('GSE100054','PD blood, GPL10558')">GSE100054</button>
+      </div>
+
+      <!-- Main form -->
+      <div class="form-grid">
+        <div class="field-group span2">
+          <label for="gseInput">GEO Accession ID</label>
+          <div class="gse-input-wrap">
+            <span class="gse-prefix">GSE</span>
+            <input type="text" id="gseInput" class="gse-input" placeholder="7621" maxlength="12">
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="tissueSelect">Tissue Type</label>
+          <div class="select-wrap">
+            <select id="tissueSelect">
+              <option value="">Auto-detect</option>
+              <option value="substantia_nigra">Substantia Nigra</option>
+              <option value="blood">Whole Blood</option>
+              <option value="frontal_cortex">Frontal Cortex</option>
+              <option value="cerebellum">Cerebellum</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced -->
+      <div class="advanced-toggle" onclick="toggleAdvanced()">
+        <span class="toggle-arrow" id="advArrow">▶</span>
+        ADVANCED OPTIONS
+      </div>
+
+      <div class="advanced-options" id="advancedOpts">
+        <div class="field-group">
+          <label for="fcThreshold">log₂FC Threshold</label>
+          <input type="number" id="fcThreshold" value="1.0" min="0.5" max="3" step="0.1">
+        </div>
+        <div class="field-group">
+          <label for="padjThreshold">FDR (padj) Threshold</label>
+          <input type="number" id="padjThreshold" value="0.05" min="0.001" max="0.1" step="0.001">
+        </div>
+        <div class="field-group">
+          <label for="nFeatures">ML Feature Count</label>
+          <input type="number" id="nFeatures" value="100" min="20" max="500" step="10">
+        </div>
+        <div class="field-group">
+          <label for="varPct">Low-Var Filter %</label>
+          <input type="number" id="varPct" value="20" min="0" max="50" step="5">
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="submit-row">
+        <button class="btn-primary" id="runBtn" onclick="runAnalysis()">
+          <span>▶ RUN PIPELINE</span>
+        </button>
+        <button class="btn-secondary" onclick="resetForm()">Reset</button>
+        <span class="run-note">Avg runtime: ~2–5 min depending on dataset size</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OUTPUT SECTION -->
+<section class="output-section" id="outputSection">
+
+  <div class="section-divider" style="padding:0;margin-bottom:32px;">
+    <div class="divider-line"></div>
+    <span class="divider-label">Analysis Results</span>
+    <div class="divider-line"></div>
+  </div>
+
+  <!-- Terminal log -->
+  <div class="terminal">
+    <div class="terminal-header">
+      <div class="panel-dots">
+        <div class="panel-dot"></div><div class="panel-dot"></div><div class="panel-dot"></div>
+      </div>
+      <span class="terminal-title">pipeline.log — live output</span>
+    </div>
+    <div class="terminal-body" id="terminalBody">
+      <span class="cursor"></span>
+    </div>
+  </div>
+
+  <!-- Metric cards -->
+  <div class="results-grid" id="resultsGrid">
+    <div class="result-card warn" id="card-deg">
+      <div class="rc-label">Significant DEGs</div>
+      <div class="rc-value" id="val-deg">—</div>
+      <div class="rc-sub">differentially expressed genes</div>
+    </div>
+    <div class="result-card info" id="card-up">
+      <div class="rc-label">Up-regulated</div>
+      <div class="rc-value" id="val-up">—</div>
+      <div class="rc-sub">in PD vs Control</div>
+    </div>
+    <div class="result-card good" id="card-down">
+      <div class="rc-label">Down-regulated</div>
+      <div class="rc-value" id="val-down">—</div>
+      <div class="rc-sub">in PD vs Control</div>
+    </div>
+    <div class="result-card purple" id="card-auc">
+      <div class="rc-label">Ensemble AUC</div>
+      <div class="rc-value" id="val-auc">—</div>
+      <div class="rc-sub">soft-voting RF+SVM+LR</div>
+    </div>
+  </div>
+
+  <!-- Charts row 1 -->
+  <div class="charts-section">
+    <!-- ML Performance -->
+    <div class="chart-card" id="chart-ml">
+      <div class="chart-title">
+        ML Model Performance (AUC)
+        <span style="font-size:10px;color:var(--muted)">5-fold stratified CV</span>
+      </div>
+      <div class="ml-bars" id="mlBars"></div>
+    </div>
+
+    <!-- Disruption scores -->
+    <div class="chart-card" id="chart-disruption">
+      <div class="chart-title">
+        Biological System Disruption
+        <span style="font-size:10px;color:var(--muted)">0–1 disruption score</span>
+      </div>
+      <div class="system-bars" id="sysBars"></div>
+    </div>
+
+    <!-- Active Causal Chains -->
+    <div class="chart-card full" id="chart-chains">
+      <div class="chart-title">Active Causal Chains</div>
+      <div class="chains" id="chainsContainer"></div>
+    </div>
+
+    <!-- Top DEGs table -->
+    <div class="chart-card full" id="chart-genes">
+      <div class="chart-title">
+        Top Differentially Expressed Genes
+        <span style="font-size:10px;color:var(--muted)">ranked by adjusted p-value</span>
+      </div>
+      <div class="gene-table-wrap">
+        <table id="geneTable">
+          <thead>
+            <tr>
+              <th>Gene</th><th>log₂FC</th><th>padj</th>
+              <th>Mean PD</th><th>Mean Ctrl</th><th>Regulation</th>
+              <th>System</th>
+            </tr>
+          </thead>
+          <tbody id="geneTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Download row -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;" id="downloadRow">
+    <button class="btn-primary" onclick="downloadReport()" style="background:var(--surface);color:var(--accent);border:1px solid var(--border);">
+      ↓ Download HTML Report
+    </button>
+    <button class="btn-secondary" onclick="downloadCSV()">↓ DEG Table (CSV)</button>
+    <button class="btn-secondary" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ New Analysis</button>
+  </div>
+
+</section>
+
+<!-- HOW IT WORKS -->
+<div class="section-divider" style="max-width:1200px;margin:40px auto 0;padding:0 48px;" id="how">
+  <div class="divider-line"></div>
+  <span class="divider-label">How It Works</span>
+  <div class="divider-line"></div>
+</div>
+
+<section class="how-section">
+  <div class="steps-row">
+    <div class="step-item">
+      <div class="step-circle">⬇</div>
+      <div class="step-item-label">GEO Download<br>& Label Detection</div>
+    </div>
+    <div class="step-item">
+      <div class="step-circle">⚙</div>
+      <div class="step-item-label">Log₂ + Quantile<br>Normalization</div>
+    </div>
+    <div class="step-item">
+      <div class="step-circle">∑</div>
+      <div class="step-item-label">Welch's t-test<br>+ BH Correction</div>
+    </div>
+    <div class="step-item">
+      <div class="step-circle">◈</div>
+      <div class="step-item-label">8 Gene Banks<br>Disruption Scoring</div>
+    </div>
+    <div class="step-item">
+      <div class="step-circle">🤖</div>
+      <div class="step-item-label">RF + SVM + LR<br>Ensemble + SHAP</div>
+    </div>
+    <div class="step-item">
+      <div class="step-circle">◻</div>
+      <div class="step-item-label">HTML Report<br>12 Figures</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">
+    NEURASCAN © 2025 — Parkinson's Early Detection Pipeline<br>
+    <span style="font-size:11px;color:#2a4a5a">Built on GEOparse · scikit-learn · SHAP · statsmodels</span>
+  </div>
+  <div class="footer-note">
+    For research use only. Not intended for clinical diagnosis.<br>
+    Validate results on independent cohorts before drawing conclusions.
+  </div>
+</footer>
+
+<!-- PROGRESS OVERLAY -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-inner">
+    <div class="progress-title">RUNNING PIPELINE</div>
+    <div class="progress-subtitle" id="progressSubtitle">Initializing…</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBarFill"></div>
+    </div>
+    <div class="progress-steps" id="progressSteps"></div>
+  </div>
+</div>
+
+<script>
+// ── DEMO DATA (simulated for GSE7621 / GSE99039) ──────────────────────────
+
+const DEMO_DATA = {
+  GSE7621: {
+    title: "Substantia nigra gene expression in Parkinson's disease",
+    platform: "GPL96",
+    pd_samples: 9,
+    ctrl_samples: 16,
+    probes: 22283,
+    final_genes: 9840,
+    deg_total: 487,
+    up: 201,
+    down: 286,
+    top_up:   ["SNCA","LRRK2","UCHL1","MAOB","GPR37"],
+    top_down: ["TH","SLC6A3","PINK1","PRKN","CLOCK"],
+    ml: {
+      "Random Forest":       { auc: 0.943, f1: 0.891 },
+      "SVM":                 { auc: 0.917, f1: 0.872 },
+      "Logistic Regression": { auc: 0.924, f1: 0.880 },
+      "Ensemble":            { auc: 0.951, f1: 0.903 },
+    },
+    disruption: {
+      "Parkinson's Core":     0.72,
+      "Dopamine System":      0.85,
+      "Circadian (SCN)":      0.54,
+      "Hypothalamic":         0.41,
+      "Neuroinflammation":    0.68,
+      "Mitochondrial":        0.77,
+      "Oxidative Stress":     0.62,
+      "Sleep-Wake":           0.37,
+    },
+    chains: [
+      {
+        title: "α-Synuclein Aggregation → Dopaminergic Death",
+        fraction: "67%",
+        color: "#E63946",
+        mechanism: "SNCA ↑ + LRRK2 ↑ → Lewy body formation → dopaminergic neuron death → LH orexin loss",
+        genes_up: ["SNCA","LRRK2","UCHL1"],
+        genes_down: ["TH","SLC6A3","DRD2"],
+        symptoms: ["Tremor","Rigidity","Bradykinesia","Excessive daytime sleepiness"],
+      },
+      {
+        title: "Mitophagy Failure → Oxidative Burst",
+        fraction: "50%",
+        color: "#264653",
+        mechanism: "PINK1 ↓ + PRKN ↓ → damaged mitochondria accumulate → ROS burst → hypothalamic energy failure",
+        genes_up: ["HMOX1","MAOB"],
+        genes_down: ["PINK1","PRKN","MFN2"],
+        symptoms: ["Fatigue","Weight loss","Cognitive slowing"],
+      },
+      {
+        title: "Neuroinflammation → Hypothalamic Dysregulation",
+        fraction: "40%",
+        color: "#E76F51",
+        mechanism: "TNF ↑ + IL6 ↑ → NLRP3 inflammasome → microglial activation → hypothalamic cytokine disruption",
+        genes_up: ["TNF","IL6","IL1B"],
+        genes_down: ["TREM2"],
+        symptoms: ["Fatigue","Cognitive decline","Sleep disruption"],
+      },
+    ],
+    top_genes: [
+      { gene:"SNCA",   log2fc: 2.34, padj: 1.2e-8,  mean_pd: 9.41, mean_ctrl: 7.07, reg:"UP",   system:"PD Core" },
+      { gene:"TH",     log2fc:-2.11, padj: 3.4e-8,  mean_pd: 5.22, mean_ctrl: 7.33, reg:"DOWN", system:"Dopamine" },
+      { gene:"LRRK2",  log2fc: 1.87, padj: 8.1e-7,  mean_pd: 8.92, mean_ctrl: 7.05, reg:"UP",   system:"PD Core" },
+      { gene:"SLC6A3", log2fc:-1.94, padj: 1.3e-6,  mean_pd: 4.88, mean_ctrl: 6.82, reg:"DOWN", system:"Dopamine" },
+      { gene:"PINK1",  log2fc:-1.22, padj: 4.2e-5,  mean_pd: 6.14, mean_ctrl: 7.36, reg:"DOWN", system:"Mitochondrial" },
+      { gene:"MAOB",   log2fc: 1.55, padj: 5.8e-5,  mean_pd: 8.31, mean_ctrl: 6.76, reg:"UP",   system:"Dopamine" },
+      { gene:"HMOX1",  log2fc: 1.41, padj: 7.3e-5,  mean_pd: 7.93, mean_ctrl: 6.52, reg:"UP",   system:"Oxidative Stress" },
+      { gene:"CLOCK",  log2fc:-1.08, padj: 0.00021, mean_pd: 5.77, mean_ctrl: 6.85, reg:"DOWN", system:"Circadian" },
+      { gene:"TNF",    log2fc: 1.29, padj: 0.00034, mean_pd: 7.44, mean_ctrl: 6.15, reg:"UP",   system:"Neuroinflam." },
+      { gene:"PRKN",   log2fc:-1.17, padj: 0.00041, mean_pd: 5.93, mean_ctrl: 7.10, reg:"DOWN", system:"Mitochondrial" },
+    ],
+  }
+};
+
+// Clone for other datasets with slight variation
+["GSE99039","GSE20141","GSE20333","GSE100054"].forEach(id => {
+  const base = JSON.parse(JSON.stringify(DEMO_DATA.GSE7621));
+  const r = () => (Math.random() - 0.5) * 0.1;
+  base.platform = id === "GSE99039" ? "GPL570" : id === "GSE20333" ? "GPL6102" : "GPL10558";
+  base.deg_total = Math.floor(base.deg_total * (0.7 + Math.random()*0.6));
+  base.up   = Math.floor(base.up   * (0.7 + Math.random()*0.6));
+  base.down = Math.floor(base.down * (0.7 + Math.random()*0.6));
+  Object.keys(base.ml).forEach(k => {
+    base.ml[k].auc = Math.min(0.99, Math.max(0.72, base.ml[k].auc + r()));
+    base.ml[k].f1  = Math.min(0.99, Math.max(0.70, base.ml[k].f1  + r()));
+  });
+  DEMO_DATA[id] = base;
+});
+
+// ── UI HELPERS ────────────────────────────────────────────────────────────
+
+let activePreset = null;
+
+function loadPreset(gse, desc) {
+  const num = gse.replace('GSE','');
+  document.getElementById('gseInput').value = num;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  activePreset = gse;
+}
+
+function toggleAdvanced() {
+  const opts  = document.getElementById('advancedOpts');
+  const arrow = document.getElementById('advArrow');
+  opts.classList.toggle('visible');
+  arrow.classList.toggle('open');
+}
+
+function resetForm() {
+  document.getElementById('gseInput').value = '';
+  document.getElementById('tissueSelect').value = '';
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('outputSection').classList.remove('visible');
+  activePreset = null;
+}
+
+// ── PIPELINE SIMULATION ───────────────────────────────────────────────────
+
+const PIPELINE_STEPS = [
+  "Fetching GEO SOFT file & metadata",
+  "Parsing expression matrix (probes × samples)",
+  "Auto-detecting PD vs Control labels",
+  "Log₂ transform + quantile normalization",
+  "Probe → gene symbol mapping (GPL annotation)",
+  "Low-variance gene filtering",
+  "Running Welch's t-test per gene",
+  "Benjamini-Hochberg FDR correction",
+  "Computing disruption scores (8 gene banks)",
+  "Identifying active causal chains",
+  "Building ML feature matrix (top DEGs)",
+  "Cross-validating RF + SVM + LR ensemble",
+  "Computing SHAP values (TreeExplainer + Kernel)",
+  "Generating 12 visualizations",
+  "Building HTML report",
+];
+
+let logLines = [];
+let currentGSE = '';
+let simulatedData = null;
+
+function getGSE() {
+  let raw = document.getElementById('gseInput').value.trim().toUpperCase();
+  if (raw.startsWith('GSE')) return raw;
+  if (/^\d+$/.test(raw)) return 'GSE' + raw;
+  return raw;
+}
+
+function addLog(level, msg, delay) {
+  return new Promise(res => setTimeout(() => {
+    const tb = document.getElementById('terminalBody');
+    const now = new Date().toTimeString().slice(0,8);
+    const cls = level === 'INFO' ? 'log-level-info' :
+                level === 'WARN' ? 'log-level-warn' : 'log-level-success';
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.innerHTML = `<span class="log-time">${now}</span><span class="${cls}">[${level}]</span><span> ${msg}</span>`;
+    // Remove cursor, add line, re-add cursor
+    const cursor = tb.querySelector('.cursor');
+    if (cursor) cursor.remove();
+    tb.appendChild(line);
+    const newCursor = document.createElement('span');
+    newCursor.className = 'cursor';
+    tb.appendChild(newCursor);
+    tb.scrollTop = tb.scrollHeight;
+    res();
+  }, delay));
+}
+
+async function runAnalysis() {
+  const gse = getGSE();
+  if (!gse || gse.length < 5) {
+    alert('Please enter a valid GSE accession ID (e.g. GSE7621)');
+    return;
+  }
+
+  currentGSE = gse;
+  simulatedData = DEMO_DATA[gse] || DEMO_DATA['GSE7621'];
+
+  // Show progress overlay
+  showProgress();
+
+  // Clear terminal
+  document.getElementById('terminalBody').innerHTML = '<span class="cursor"></span>';
+  logLines = [];
+}
+
+function showProgress() {
+  const overlay = document.getElementById('progressOverlay');
+  const stepsEl = document.getElementById('progressSteps');
+  overlay.classList.add('active');
+  stepsEl.innerHTML = '';
+
+  PIPELINE_STEPS.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = 'prog-step';
+    el.id = `ps-${i}`;
+    el.innerHTML = `<div class="prog-step-icon">○</div><span>${s}</span>`;
+    stepsEl.appendChild(el);
+  });
+
+  simulatePipeline();
+}
+
+async function simulatePipeline() {
+  const totalSteps = PIPELINE_STEPS.length;
+  const fill = document.getElementById('progressBarFill');
+  const sub  = document.getElementById('progressSubtitle');
+
+  for (let i = 0; i < totalSteps; i++) {
+    // Mark previous done
+    if (i > 0) {
+      const prev = document.getElementById(`ps-${i-1}`);
+      prev.className = 'prog-step done';
+      prev.querySelector('.prog-step-icon').textContent = '✓';
+    }
+    // Mark current active
+    const cur = document.getElementById(`ps-${i}`);
+    cur.className = 'prog-step active';
+    cur.querySelector('.prog-step-icon').textContent = '◌';
+
+    sub.textContent = PIPELINE_STEPS[i] + '…';
+    fill.style.width = `${((i+1)/totalSteps*100).toFixed(0)}%`;
+
+    // Scroll step into view
+    cur.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+    const delay = 300 + Math.random() * 600;
+    await new Promise(r => setTimeout(r, delay));
+  }
+
+  // Mark last done
+  const last = document.getElementById(`ps-${totalSteps-1}`);
+  last.className = 'prog-step done';
+  last.querySelector('.prog-step-icon').textContent = '✓';
+  fill.style.width = '100%';
+  sub.textContent = 'Pipeline complete!';
+
+  await new Promise(r => setTimeout(r, 600));
+
+  document.getElementById('progressOverlay').classList.remove('active');
+  showResults();
+}
+
+async function showResults() {
+  const d = simulatedData;
+  const gse = currentGSE;
+
+  // Show output section
+  document.getElementById('outputSection').classList.add('visible');
+  window.scrollTo({ top: document.getElementById('outputSection').offsetTop - 80, behavior: 'smooth' });
+
+  // Terminal logs
+  const logs = [
+    ['INFO', `Fetching ${gse} from GEO (destdir=./geo_data)`, 0],
+    ['INFO', `Title: ${d.title}`, 200],
+    ['INFO', `Platform: ${d.platform} | Probes: ${d.probes.toLocaleString()} | Samples: ${d.pd_samples + d.ctrl_samples}`, 350],
+    ['INFO', `Labels — PD: ${d.pd_samples}, Control: ${d.ctrl_samples}`, 500],
+    ['INFO', `Applying log₂ transform + quantile normalization`, 700],
+    ['INFO', `Mapped ${d.probes.toLocaleString()} probes → ${d.final_genes.toLocaleString()} gene symbols`, 900],
+    ['INFO', `Low-variance filter: retained top 80% genes`, 1100],
+    ['INFO', `Running Welch's t-test (${d.final_genes.toLocaleString()} genes)…`, 1300],
+    ['INFO', `BH FDR correction applied`, 1600],
+    ['SUCCESS', `DEA complete: ${d.up} UP, ${d.down} DOWN (|log2FC|≥1.0, padj<0.05)`, 1800],
+    ['INFO', `Disruption scoring (8 gene banks)…`, 2100],
+    ['INFO', `Active causal chains: ${d.chains.length} detected`, 2400],
+    ['INFO', `ML feature matrix: ${d.pd_samples + d.ctrl_samples} samples × 100 features`, 2700],
+    ['INFO', `Cross-validating RF (AUC=${d.ml['Random Forest'].auc.toFixed(3)}) SVM (AUC=${d.ml['SVM'].auc.toFixed(3)}) LR (AUC=${d.ml['Logistic Regression'].auc.toFixed(3)})`, 3000],
+    ['SUCCESS', `Ensemble AUC = ${d.ml['Ensemble'].auc.toFixed(3)} | F1 = ${d.ml['Ensemble'].f1.toFixed(3)}`, 3400],
+    ['INFO', `Generating SHAP values (TreeExplainer + LinearExplainer + KernelExplainer)`, 3700],
+    ['SUCCESS', `Pipeline complete → ${gse}_parkinson_report.html`, 4100],
+  ];
+
+  for (const [level, msg, delay] of logs) {
+    await addLog(level, msg, delay);
+  }
+
+  // Metric cards (staggered)
+  await new Promise(r => setTimeout(r, 400));
+  document.getElementById('val-deg').textContent  = d.deg_total.toLocaleString();
+  document.getElementById('val-up').textContent   = d.up.toLocaleString();
+  document.getElementById('val-down').textContent = d.down.toLocaleString();
+  document.getElementById('val-auc').textContent  = d.ml['Ensemble'].auc.toFixed(3);
+
+  ['card-deg','card-up','card-down','card-auc'].forEach((id, i) => {
+    setTimeout(() => {
+      document.getElementById(id).classList.add('visible');
+    }, i * 120);
+  });
+
+  // ML bars
+  await new Promise(r => setTimeout(r, 500));
+  const mlContainer = document.getElementById('mlBars');
+  mlContainer.innerHTML = '';
+  Object.entries(d.ml).forEach(([model, m], i) => {
+    const row = document.createElement('div');
+    row.className = 'ml-bar-row';
+    row.innerHTML = `
+      <span class="ml-model-name">${model}</span>
+      <div class="bar-track"><div class="bar-fill" id="mlbar-${i}" style="width:0"></div></div>
+      <span class="bar-val">${m.auc.toFixed(3)}</span>
+    `;
+    mlContainer.appendChild(row);
+    setTimeout(() => {
+      document.getElementById(`mlbar-${i}`).style.width = `${m.auc * 100}%`;
+    }, 100 + i * 80);
+  });
+  document.getElementById('chart-ml').classList.add('visible');
+
+  // System bars
+  await new Promise(r => setTimeout(r, 300));
+  const sysColors = [
+    '#E63946','#F4A261','#2A9D8F','#457B9D',
+    '#E76F51','#264653','#A8DADC','#6A4C93',
+  ];
+  const sysContainer = document.getElementById('sysBars');
+  sysContainer.innerHTML = '';
+  Object.entries(d.disruption).forEach(([sys, score], i) => {
+    const color = sysColors[i % sysColors.length];
+    const row = document.createElement('div');
+    row.className = 'sys-bar-row';
+    row.innerHTML = `
+      <span class="sys-name">${sys}</span>
+      <div class="bar-track"><div class="sys-bar-fill" id="sysbar-${i}" style="background:${color}"></div></div>
+      <span class="sys-val">${score.toFixed(2)}</span>
+    `;
+    sysContainer.appendChild(row);
+    setTimeout(() => {
+      document.getElementById(`sysbar-${i}`).style.width = `${score * 100}%`;
+    }, 100 + i * 60);
+  });
+  document.getElementById('chart-disruption').classList.add('visible');
+
+  // Causal chains
+  await new Promise(r => setTimeout(r, 300));
+  const chainsEl = document.getElementById('chainsContainer');
+  chainsEl.innerHTML = '';
+  d.chains.forEach(chain => {
+    const div = document.createElement('div');
+    div.className = 'chain-item';
+    div.style.setProperty('--chain-color', chain.color);
+    div.innerHTML = `
+      <div class="chain-title">
+        ${chain.title}
+        <span class="chain-fraction" style="background:${chain.color}22;color:${chain.color}">${chain.fraction} triggers active</span>
+      </div>
+      <div class="chain-detail">${chain.mechanism}</div>
+      <div class="chain-genes">
+        ${chain.genes_up.map(g => `<span class="gene-tag up">↑ ${g}</span>`).join('')}
+        ${chain.genes_down.map(g => `<span class="gene-tag down">↓ ${g}</span>`).join('')}
+      </div>
+      <div class="symptoms">
+        ${chain.symptoms.map(s => `<span class="symptom-tag">${s}</span>`).join('')}
+      </div>
+    `;
+    chainsEl.appendChild(div);
+  });
+  document.getElementById('chart-chains').classList.add('visible');
+
+  // Gene table
+  await new Promise(r => setTimeout(r, 200));
+  const tbody = document.getElementById('geneTableBody');
+  tbody.innerHTML = '';
+  d.top_genes.forEach(g => {
+    const fc_str = (g.log2fc > 0 ? '+' : '') + g.log2fc.toFixed(2);
+    const fc_col = g.log2fc > 0 ? '#ff9090' : '#6af0d0';
+    const badge  = g.reg === 'UP'
+      ? '<span class="reg-badge reg-up">UP</span>'
+      : '<span class="reg-badge reg-down">DOWN</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="color:var(--white);font-weight:500">${g.gene}</td>
+      <td style="color:${fc_col}">${fc_str}</td>
+      <td>${g.padj.toExponential(2)}</td>
+      <td>${g.mean_pd.toFixed(2)}</td>
+      <td>${g.mean_ctrl.toFixed(2)}</td>
+      <td>${badge}</td>
+      <td style="color:var(--muted)">${g.system}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('chart-genes').classList.add('visible');
+}
+
+// ── DOWNLOADS ────────────────────────────────────────────────────────────
+
+function downloadReport() {
+  alert(`In the full pipeline, this would download:\n${currentGSE}_parkinson_report.html\n\nRun python main.py --gse ${currentGSE} to generate the actual report.`);
+}
+
+function downloadCSV() {
+  if (!simulatedData) return;
+  const rows = [['gene','log2FC','padj','mean_PD','mean_ctrl','regulation','system']];
+  simulatedData.top_genes.forEach(g => {
+    rows.push([g.gene, g.log2fc, g.padj, g.mean_pd, g.mean_ctrl, g.reg, g.system]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `${currentGSE}_DEG_results.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// Auto-animate hero steps
+document.querySelectorAll('.p-step').forEach((el, i) => {
+  el.classList.remove('active');
+  setTimeout(() => el.classList.add('active'), 300 + i * 200);
+});
+</script>
+</body>
+</html>
